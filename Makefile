@@ -1,4 +1,4 @@
-TARGET := pokeZero
+TARGET := pokezero
 BUILD := ./build
 OBJDIR := $(BUILD)/objects
 BINDIR := $(BUILD)/bin
@@ -13,7 +13,7 @@ LDFLAGS :=
 # linker flags: libraries to link (e.g. -lfoo)
 LDLIBS :=
 # flags required for dependency generation; passed to compilers
-DEPFLAGS = -MT $@ -MD -MP -MF $(DEPDIR)/$*.Td
+DEPFLAGS = -MQ $@ -MD -MP -MF $(DEPDIR)/$*.Td
 
 CXXTARGET := $(TARGET)
 CXX := clang++
@@ -35,17 +35,17 @@ POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
 .PHONY: all debug release clean
 
-all: pokezero
+all: debug
 
-pokezero: $(CXXTARGET)
+PokeZero: $(CXXTARGET)
 	ln -sf $(BINDIR)/$(CXXTARGET) $(TARGET)
 
-debug: CXXFLAGS += -DDEBUG -g
+debug: CXXFLAGS += -DDEBUG -g -Og
 debug: LDLIBS += -fsanitize=leak
-debug: pokezero
+debug: PokeZero
 
 release: CXXFLAGS += -O3
-release: pokezero
+release: PokeZero
 
 clean:
 	rm -rvf $(BUILD)
@@ -66,4 +66,4 @@ $(OBJDIR)/%.o: %.cc $(DEPDIR)/%.d
 .PRECIOUS: $(DEPDIR)/%.d
 $(DEPDIR)/%.d: ;
 
--include $(CCDEPS)
+-include $(CXXDEPS)
