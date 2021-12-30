@@ -17,7 +17,9 @@
  */
 
 #include <iostream>
+#include <future>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <main.hh>
 
@@ -76,6 +78,29 @@ error_readpipe:
 }
 
 int
+read_child(int fd, std::atomic<bool> &quit)
+{
+	static char buf[BUFSIZE];
+	ssize_t bytes_read;
+	while (!quit && (bytes_read = read(fd, buf, BUFSIZE)) > 0) {
+		/* echo the stdout of the child */
+		write(STDOUT_FILENO, buf, bytes_read);
+	}
+
+	return 0;
+}
+
+void
+write_child(int fd, std::atomic<bool> &quit)
+{
+	std::string input;
+	while (!quit && std::getline(std::cin, input)) {
+		input.push_back('\n');
+		write(fd, input.c_str(), input.length());
+	}
+}
+
+int
 main(int argc, char **argv, char *envp[])
 {
 	(void) argc;
@@ -94,15 +119,10 @@ main(int argc, char **argv, char *envp[])
 		exit(-1);
 	}
 
-	static char buf[BUFSIZE];
-	ssize_t bytes_read;
-	while ((bytes_read = read(fds[0], buf, BUFSIZE)) > 0) {
-		write(STDOUT_FILENO, buf, bytes_read);
-		if (strnstr(buf, "turn", bytes_read)) {
-			write(fds[1], ">p1 move 1\n", 11);
-			write(fds[1], ">p2 move 1\n", 11);
-		}
-	}
+	std::atomic<bool> quit = false;
+
+	auto read_ret = std::async(read_child, fds[0], std::ref(quit));
+	auto write_ret = std::async(write_child, fds[1], std::ref(quit));
 
 	int stat_loc;
 	if (wait(&stat_loc) != childpid) {
@@ -110,6 +130,10 @@ main(int argc, char **argv, char *envp[])
 		ret = -1;
 		goto cleanup;
 	}
+
+	quit = true;
+	read_ret.wait();
+	write_ret.wait();
 
 cleanup:
 	close(fds[0]);
