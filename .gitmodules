@@ -1,0 +1,3 @@
+[submodule "pokemon-showdown"]
+	path = pokemon-showdown
+	url = git@github.com:Davey-Hughes/pokemon-showdown.git
