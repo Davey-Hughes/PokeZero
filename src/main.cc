@@ -17,12 +17,103 @@
  */
 
 #include <iostream>
+#include <unistd.h>
 
 #include <main.hh>
 
-int
-main()
+pid_t
+create_child(char *const argv[], char *const envp[], int fds[])
 {
-	std::cout << "hello, world" << std::endl;
-	return 0;
+	/*
+	 * parent writes into writepipe[1] and reads from readpipe[0]
+	 * child writes into readpipe[1] and reads from writepipe[0]
+	 */
+	int readpipe[2], writepipe[2];
+	pid_t pid;
+
+	if (pipe(readpipe) < 0) {
+		goto error_readpipe;
+	}
+
+	if (pipe(writepipe) < 0) {
+		goto error_writepipe;
+	}
+
+        pid = fork();
+	switch(pid) {
+	case -1: // failed to fork child
+		goto error_fork;
+	case 0:  // child
+		dup2(writepipe[0], STDIN_FILENO);
+		close(writepipe[0]);
+		dup2(readpipe[1], STDOUT_FILENO);
+		close(readpipe[1]);
+
+		if (execve(argv[0], argv, envp) == -1) {
+			std::perror("Could not execve");
+		}
+
+		exit(-1);
+	default: // parent
+		close(writepipe[0]);
+		close(readpipe[1]);
+		break;
+	}
+
+	fds[0] = readpipe[0];
+	fds[1] = writepipe[1];
+
+	return pid;
+
+error_fork:
+	close(readpipe[0]);
+	close(readpipe[1]);
+error_writepipe:
+	close(writepipe[0]);
+	close(writepipe[1]);
+error_readpipe:
+	return -1;
+}
+
+int
+main(int argc, char **argv, char *envp[])
+{
+	(void) argc;
+	(void) argv;
+
+	int ret = 0;
+
+	char node[] = "/usr/local/bin/node";
+	char js_file[] = "./pokemon-showdown/.sim-dist/examples/battle-profiling.js";
+	char *child_argv[] = {node, js_file, nullptr};
+	int fds[2];
+
+	pid_t childpid = create_child(child_argv, envp, fds);
+	if (childpid < 0) {
+		std::perror("Error creating child process");
+		exit(-1);
+	}
+
+	static char buf[BUFSIZE];
+	ssize_t bytes_read;
+	while ((bytes_read = read(fds[0], buf, BUFSIZE)) > 0) {
+		write(STDOUT_FILENO, buf, bytes_read);
+		if (strnstr(buf, "turn", bytes_read)) {
+			write(fds[1], ">p1 move 1\n", 11);
+			write(fds[1], ">p2 move 1\n", 11);
+		}
+	}
+
+	int stat_loc;
+	if (wait(&stat_loc) != childpid) {
+		std::perror("Wait failed for child process");
+		ret = -1;
+		goto cleanup;
+	}
+
+cleanup:
+	close(fds[0]);
+	close(fds[1]);
+
+	return ret;
 }

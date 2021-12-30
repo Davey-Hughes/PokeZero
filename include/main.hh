@@ -19,6 +19,6 @@
 #ifndef MAIN_HH
 #define MAIN_HH
 
-
+#define BUFSIZE 4096
 
 #endif /* MAIN_HH */
