@@ -6,8 +6,10 @@ DEPDIR := $(OBJDIR)/.deps
 
 BASE_FLAGS := -Wall -Werror -Wextra -pedantic-errors
 
+# compiler
+CXX := clang++
 # linker
-LD := clang++
+LD := $(CXX)
 # linker flags
 LDFLAGS :=
 # linker flags: libraries to link (e.g. -lfoo)
@@ -16,7 +18,6 @@ LDLIBS :=
 DEPFLAGS = -MQ $@ -MD -MP -MF $(DEPDIR)/$*.Td
 
 CXXTARGET := $(TARGET)
-CXX := clang++
 CXXFLAGS := -std=c++20 $(BASE_FLAGS)
 SYSINCLUDE :=
 CXXINCLUDE := -Iinclude
