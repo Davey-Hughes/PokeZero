@@ -1,3 +1,8 @@
+GIT=git
+GIT_SUBMODULES = $(shell sed -nE 's/path = +(.+)/\1\/.git/ p' .gitmodules | paste -s -)
+
+SHOWDOWN := pokemon-showdown
+
 TARGET := pokezero
 BUILD := ./build
 OBJDIR := $(BUILD)/objects
@@ -36,7 +41,14 @@ POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
 .PHONY: all debug release clean
 
-all: debug
+all: debug $(GIT_SUBMODULES) showdown
+
+$(GIT_SUBMODULES): %/.git: .gitmodules
+	$(GIT) submodule update --init $*
+	@touch $@
+
+showdown:
+	$(SHOWDOWN)/build
 
 PokeZero: $(CXXTARGET)
 	ln -sf $(BINDIR)/$(CXXTARGET) $(TARGET)
