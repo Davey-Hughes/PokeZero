@@ -182,7 +182,7 @@ choose_random(std::mt19937 &rng, int size)
 	return random_roll();
 }
 
-void
+int
 trivial_socket_server(std::string sock_path)
 {
 	char buf[BUFSIZE];
@@ -303,7 +303,7 @@ error_listen:
 error_bind:
 	close(server_sock);
 error_socket:
-	exit(ret);
+	return ret;
 }
 
 int
@@ -314,7 +314,6 @@ main(int argc, char **argv, char **envp)
 	(void) argv;
 	(void) envp;
 
-	/* trivial_socket_client(); */
 	auto p1_ret = std::async(trivial_socket_server, "/tmp/p1");
 	auto p2_ret = std::async(trivial_socket_server, "/tmp/p2");
 
@@ -336,16 +335,18 @@ main(int argc, char **argv, char **envp)
 	std::atomic<bool> quit = false;
 
 	auto read_ret = std::async(read_child, fds[0], std::ref(quit));
-	auto write_ret = std::async(write_child, fds[1], std::ref(quit));
 
 	int stat_loc;
-	if (wait(&stat_loc) != childpid) {
+	pid_t wait_ret;
+	wait_ret = waitpid(childpid, &stat_loc, 0);
+	if (wait_ret != childpid) {
 		std::perror("Wait failed for child process");
 		ret = -1;
 		goto cleanup;
 	}
 
 	quit = true;
+	read_ret.wait();
 
 cleanup:
 	close(fds[0]);

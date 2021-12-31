@@ -47,7 +47,7 @@ $(GIT_SUBMODULES): %/.git: .gitmodules
 	$(GIT) submodule update --init $*
 	@touch $@
 
-showdown:
+showdown: $(SHOWDOWN)
 	$(SHOWDOWN)/build
 
 PokeZero: $(CXXTARGET)
