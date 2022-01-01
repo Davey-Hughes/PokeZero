@@ -1,8 +1,3 @@
-GIT=git
-GIT_SUBMODULES = $(shell sed -nE 's/path = +(.+)/\1\/.git/ p' .gitmodules | paste -s -)
-
-SHOWDOWN := pokemon-showdown
-
 TARGET := pokezero
 BUILD := ./build
 OBJDIR := $(BUILD)/objects
@@ -10,6 +5,9 @@ BINDIR := $(BUILD)/bin
 DEPDIR := $(OBJDIR)/.deps
 
 BASE_FLAGS := -Wall -Werror -Wextra -pedantic-errors
+SANITIZE := -fsanitize=address -fsanitize=undefined -fsanitize=leak \
+	-fno-sanitize-recover=all -fsanitize=float-divide-by-zero \
+	-fsanitize=float-cast-overflow -fno-sanitize=null -fno-sanitize=alignment
 
 # compiler
 CXX := clang++
@@ -39,25 +37,43 @@ PRECOMPILE =
 # postcompile step
 POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
-.PHONY: all debug release clean
+.PHONY: all debug release clean run showdown
 
 all: debug $(GIT_SUBMODULES) showdown
 
+# running PokeEnv
+RUN_ENV :=
+RUN_ARGS :=
+ifneq ($(OS), Windows_NT)
+	UNAME_S := $(shell uname -s)
+	# macos specific variables
+	ifeq ($(UNAME_S), Darwin)
+		RUN_ENV += MallocNanoZone=0
+	endif
+endif
+run: PokeZero
+	$(RUN_ENV) ./$(TARGET)
+
+# updating git submodules
+GIT=git
+GIT_SUBMODULES = $(shell sed -nE 's/path = +(.+)/\1\/.git/ p' .gitmodules | paste -s -)
 $(GIT_SUBMODULES): %/.git: .gitmodules
 	$(GIT) submodule update --init $*
 	@touch $@
 
-showdown: $(SHOWDOWN)
-	$(SHOWDOWN)/build
+# building the showdown source code
+SHOWDOWN_DIR := ./pokemon-showdown
+showdown:
+	$(SHOWDOWN_DIR)/build
 
 PokeZero: $(CXXTARGET)
 	ln -sf $(BINDIR)/$(CXXTARGET) $(TARGET)
 
 debug: CXXFLAGS += -DDEBUG -g -Og
-debug: LDLIBS += -fsanitize=leak
+debug: LDLIBS += $(SANITIZE)
 debug: PokeZero
 
-release: CXXFLAGS += -O3
+release: CXXFLAGS += -O3 -march=native
 release: PokeZero
 
 clean:
