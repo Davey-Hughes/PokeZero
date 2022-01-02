@@ -16,22 +16,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "showdown.hh"
-#include "random_player.hh"
+#ifndef RANDOM_PLAYER_HH
+#define RANDOM_PLAYER_HH
 
-#include <main.hh>
+#include <vector>
+#include <thread>
 
-int
-main()
-{
-	auto p1 = showdown::RandomPlayer("p1");
-	auto p2 = showdown::RandomPlayer("p2");
-	p1.connect(showdown::RandomPlayer::force_create);
-	p2.connect(showdown::RandomPlayer::force_create);
+#include "player.hh"
 
-	auto sd = showdown::Showdown();
-	sd.start("./pokemon-showdown/.sim-dist/examples/battle-profiling.js", "p1", "p2");
+namespace showdown {
+class RandomPlayer : public Player {
+public:
+	/* inherit constructors */
+	using Player::Player;
 
-	p1.loop();
-	p2.loop();
+	void loop();
+
+	~RandomPlayer();
+
+private:
+	size_t randomInt(size_t, size_t);
+	std::vector<std::thread> threads;
+};
 }
+
+#endif /* RANDOM_PLAYER_HH */

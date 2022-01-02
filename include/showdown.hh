@@ -16,22 +16,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "showdown.hh"
-#include "random_player.hh"
+#ifndef SHOWDOWN_HH
+#define SHOWDOWN_HH
 
-#include <main.hh>
+#include <string>
+#include <vector>
+#include <unistd.h>
 
-int
-main()
-{
-	auto p1 = showdown::RandomPlayer("p1");
-	auto p2 = showdown::RandomPlayer("p2");
-	p1.connect(showdown::RandomPlayer::force_create);
-	p2.connect(showdown::RandomPlayer::force_create);
+namespace showdown {
+class Showdown {
+public:
+	/* constructors */
+	Showdown();
+	~Showdown();
 
-	auto sd = showdown::Showdown();
-	sd.start("./pokemon-showdown/.sim-dist/examples/battle-profiling.js", "p1", "p2");
+	bool start(const std::string &, const std::vector<std::string> &);
+	bool start(const std::string &) {
+		return this->start(showdown_script, {});
+	}
 
-	p1.loop();
-	p2.loop();
+	template<typename... Ts>
+	bool start(const std::string &showdown_script, Ts&... args) {
+		return this->start(showdown_script, {args...});
+	}
+
+
+private:
+	std::string showdown_script = "";
+
+	struct {
+		pid_t pid = 0;
+		int readfd = -1;
+		int writefd = -1;
+	} child;
+};
 }
+
+
+#endif /* SHOWDOWN_HH */
