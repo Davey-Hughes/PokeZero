@@ -63,7 +63,7 @@ $(GIT_SUBMODULES): %/.git: .gitmodules
 
 # building the showdown source code
 SHOWDOWN_DIR := ./pokemon-showdown
-showdown:
+showdown: $(GIT_SUBMODULES)
 	$(SHOWDOWN_DIR)/build
 
 PokeZero: $(CXXTARGET)
