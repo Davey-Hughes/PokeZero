@@ -51,7 +51,7 @@ ifneq ($(OS), Windows_NT)
 		RUN_ENV += MallocNanoZone=0
 	endif
 endif
-run: PokeZero
+run: PokeZero showdown
 	$(RUN_ENV) ./$(TARGET)
 
 # updating git submodules
