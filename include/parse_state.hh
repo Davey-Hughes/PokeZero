@@ -126,17 +126,17 @@ std::vector<double> parseState() {
 	//         return torch.Tensor(ability+item+types+moves+move_pp + move_disabled +status+stats
 	//         +stat_boosts+sub_hp+trapped_counter+volatile_status)
 	std::ifstream ifstate("pokemon-showdown/battle_test_jsons/test.json");
-	std::ifstream ifmoves("move_id.json");
-	std::ifstream ifpokedex("pokedex.json");
-	std::ifstream ifabilities("ability_id.json");
-	std::ifstream ifitems("item_id.json");
-	std::ifstream iftypes("type_id.json");
-	std::ifstream ifstatus("status.json");
-	std::ifstream ifvolatiles("volatiles.json");
-	std::ifstream ifsideconds("side_conds.json");
-	std::ifstream ifslotconds("slot_conds.json");
-	std::ifstream ifterrain("terrain.json");
-	std::ifstream ifweather("weather.json");
+	std::ifstream ifmoves("data/move_id.json");
+	std::ifstream ifpokedex("data/pokedex.json");
+	std::ifstream ifabilities("data/ability_id.json");
+	std::ifstream ifitems("data/item_id.json");
+	std::ifstream iftypes("data/type_id.json");
+	std::ifstream ifstatus("data/status.json");
+	std::ifstream ifvolatiles("data/volatiles.json");
+	std::ifstream ifsideconds("data/side_conds.json");
+	std::ifstream ifslotconds("data/slot_conds.json");
+	std::ifstream ifterrain("data/terrain.json");
+	std::ifstream ifweather("data/weather.json");
 	json state, moves, pokedex, abilities, items, types, status, volatiles, sideconds, slotconds, terrain, weather;
 	ifstate >> state;
 	std::cerr << "MADE IT HERE" << std::endl;	
