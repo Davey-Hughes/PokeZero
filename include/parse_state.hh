@@ -20,7 +20,7 @@
 #define PARSE_STATE_HH
 
 #include <fstream>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <map>
 #include <iterator>
 
