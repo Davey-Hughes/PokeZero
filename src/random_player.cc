@@ -21,8 +21,7 @@
 #include <vector>
 #include <thread>
 
-#include <rapidjson/document.h>
-#include "rapidjson/prettywriter.h"
+#include <nlohmann/json.hpp>
 
 namespace showdown {
 
@@ -46,44 +45,28 @@ RandomPlayer::loop()
 				return;
 			}
 
-			/* TODO: check speed of this */
-			rapidjson::Document document;
-			document.Parse(message.c_str());
+			nlohmann::json msg_json = nlohmann::json::parse(message);
+			std::string command = msg_json["command"];
+			nlohmann::json reply;
 
-			assert(document.HasMember("command"));
-			assert(document["command"].IsString());
-			std::string command(document["command"].GetString());
-
-			rapidjson::StringBuffer reply_buf;
-			rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(reply_buf);
-
-			writer.StartObject();
-			/* TODO: check speed of this */
-			if (command.compare("active") == 0) {
-				assert(document.HasMember("choices"));
-				writer.String("active");
-				writer.Int(this->randomInt(0, document["choices"].GetArray().Size() - 1));
-			} else if (command.compare("forceSwitch") == 0) {
-				assert(document.HasMember("choices"));
-				writer.String("switch");
-				writer.Int(this->randomInt(0, document["choices"].GetArray().Size() - 1));
-			} else if (command.compare("teamPreview") == 0) {
-				writer.String("preview");
-				writer.String("default");
+			if (command == "active") {
+				reply["active"] = this->randomInt(0, msg_json["choices"].size() - 1);
+			} else if (command == "forceSwitch") {
+				reply["switch"] = this->randomInt(0, msg_json["choices"].size() - 1);
+			} else if (command == "teamPreview") {
+				reply["teamPreview"] = "default";
 			} else {
 				std::cerr << "Unknown command: " << command << std::endl;
 			}
-			writer.EndObject();
 
-			bytes_sent = send(this->client.sockfd, reply_buf.GetString(), reply_buf.GetSize() + 1, 0);
+			std::string reply_str = reply.dump();
+			bytes_sent = send(this->client.sockfd, reply_str.c_str(), reply_str.length() + 1, 0);
 			if (bytes_sent == -1) {
+				/* TODO: handle better */
 				perror("error send");
-				goto error_send;
+				return;
 			}
 		}
-
-	error_send:
-		return;
 	}));
 }
 

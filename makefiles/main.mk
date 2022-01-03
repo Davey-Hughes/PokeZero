@@ -20,7 +20,7 @@ DEPFLAGS = -MQ $@ -MD -MP -MF $(DEPDIR)/$*.Td
 CXXTARGET := $(TARGET)
 CXXFLAGS := -std=c++20 $(BASE_FLAGS)
 SYSINCLUDE :=
-CXXINCLUDE := -Iinclude
+CXXINCLUDE := -Iinclude $(shell pkg-config nlohmann_json --cflags)
 CXXSRC := $(wildcard src/*.cc)
 CXXOBJS := $(patsubst %,$(OBJDIR)/%.o,$(basename $(CXXSRC)))
 CXXDEPS := $(patsubst %,$(DEPDIR)/%.d,$(basename $(CXXSRC)))

@@ -21,7 +21,6 @@
 
 #include <string>
 #include <vector>
-#include <unistd.h>
 
 namespace showdown {
 class Showdown {
