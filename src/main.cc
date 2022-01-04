@@ -18,20 +18,9 @@
 
 #include "showdown.hh"
 #include "random_player.hh"
-
+#include "parse_state.hh"
 #include <main.hh>
 
-int
-main()
-{
-	auto p1 = showdown::RandomPlayer("p1");
-	auto p2 = showdown::RandomPlayer("p2");
-	p1.connect(showdown::RandomPlayer::force_create);
-	p2.connect(showdown::RandomPlayer::force_create);
-
-	auto sd = showdown::Showdown();
-	sd.start("./pokemon-showdown/.sim-dist/examples/battle-profiling.js", "p1", "p2");
-
-	p1.loop();
-	p2.loop();
+int main(){
+	parse_state::parseState();
 }
