@@ -20,22 +20,29 @@
 #define PARSE_STATE_HH
 
 #include <fstream>
-#include <nlohmann/json.hpp>
-#include <map>
+#include <iostream>
 #include <iterator>
+#include <map>
+#include <nlohmann/json.hpp>
 
 namespace parse_state {
 using json = nlohmann::json;
 
-double normStat(double stat){
+double
+normStat(double stat)
+{
 	return stat / 500 * 2 - 1;
 }
 
-double normBoost(double boost){
+double
+normBoost(double boost)
+{
 	return (boost + 6) / 6 - 1;
 }
 
-std::vector<double> addNormStats(json boosts, std::vector<double> prev){
+std::vector<double>
+addNormStats(json boosts, std::vector<double> prev)
+{
 	std::vector<double> tmp, res;
 	tmp.push_back(normBoost(boosts["atk"]));
 	tmp.push_back(normBoost(boosts["def"]));
@@ -44,21 +51,25 @@ std::vector<double> addNormStats(json boosts, std::vector<double> prev){
 	tmp.push_back(normBoost(boosts["spe"]));
 	tmp.push_back(normBoost(boosts["accuracy"]));
 	tmp.push_back(normBoost(boosts["evasion"]));
-	res.reserve(prev.size() + tmp.size() ); // preallocate memory
-	res.insert(res.end(), prev.begin(), prev.end() );
-	res.insert(res.end(), tmp.begin(), tmp.end() );
+	res.reserve(prev.size() + tmp.size()); // preallocate memory
+	res.insert(res.end(), prev.begin(), prev.end());
+	res.insert(res.end(), tmp.begin(), tmp.end());
 	return res;
 }
 
-std::vector<double> concatVectors(std::vector<double> prev, std::vector<double> tmp){
+std::vector<double>
+concatVectors(std::vector<double> prev, std::vector<double> tmp)
+{
 	std::vector<double> res;
-	res.reserve(prev.size() + tmp.size() ); // preallocate memory
-	res.insert(res.end(), prev.begin(), prev.end() );
-	res.insert(res.end(), tmp.begin(), tmp.end() );
+	res.reserve(prev.size() + tmp.size()); // preallocate memory
+	res.insert(res.end(), prev.begin(), prev.end());
+	res.insert(res.end(), tmp.begin(), tmp.end());
 	return res;
 }
 
-std::vector<double> addNormStats(json stats, int hp, std::vector<double> prev){
+std::vector<double>
+addNormStats(json stats, int hp, std::vector<double> prev)
+{
 	std::vector<double> tmp, res;
 	tmp.push_back(2 * double(hp) / double(stats["hp"]) - 1);
 	tmp.push_back(normStat(stats["hp"]));
@@ -71,7 +82,9 @@ std::vector<double> addNormStats(json stats, int hp, std::vector<double> prev){
 	return res;
 }
 
-std::vector<double> addStatusVector(json a, std::string query, std::vector<double> prev){
+std::vector<double>
+addStatusVector(json a, std::string query, std::vector<double> prev)
+{
 	std::vector<double> res;
 	std::vector<double> a_vec(a.size(), -1);
 	a_vec.at(a[query]) = 1;
@@ -80,11 +93,13 @@ std::vector<double> addStatusVector(json a, std::string query, std::vector<doubl
 	return res;
 }
 
-std::vector<double> addTypeVector(json a, json types, std::vector<double> prev){
+std::vector<double>
+addTypeVector(json a, json types, std::vector<double> prev)
+{
 	std::vector<double> type_vector(types.size(), -1);
 	std::vector<double> res;
-	for(std::string mon_type : a){
-		if (types.contains(mon_type)){
+	for (std::string mon_type: a) {
+		if (types.contains(mon_type)) {
 			type_vector.at(types[mon_type]) = 1;
 		}
 	}
@@ -93,12 +108,14 @@ std::vector<double> addTypeVector(json a, json types, std::vector<double> prev){
 	return res;
 }
 
-std::vector<double> addVolVector(json a, json volatiles, std::vector<double> prev){
+std::vector<double>
+addVolVector(json a, json volatiles, std::vector<double> prev)
+{
 	std::vector<double> vol_vector(volatiles.size(), -1);
 	std::vector<double> res;
-	if(a.size() > 0){
-		for(json vol : a){
-			if (volatiles.contains(vol["id"])){
+	if (a.size() > 0) {
+		for (json vol: a) {
+			if (volatiles.contains(vol["id"])) {
 				std::string vol_id = vol["id"];
 				vol_vector.at(volatiles[vol_id]) = 1;
 			}
@@ -109,11 +126,13 @@ std::vector<double> addVolVector(json a, json volatiles, std::vector<double> pre
 	return res;
 }
 
-std::vector<double> addGameVector(json a, json weather, std::vector<double> prev){
+std::vector<double>
+addGameVector(json a, json weather, std::vector<double> prev)
+{
 	std::vector<double> res;
 	std::vector<double> weather_vector(weather.size(), -1);
 	double weather_d = -1;
-	if(a.size() > 1){
+	if (a.size() > 1) {
 		std::string w_id = a["id"];
 		weather_vector.at(weather[w_id]) = 1;
 		weather_d = double(a["duration"]) / 7 * 2 - 1;
@@ -122,7 +141,9 @@ std::vector<double> addGameVector(json a, json weather, std::vector<double> prev
 	res.push_back(weather_d);
 	return res;
 }
-std::vector<double> parseState() {
+std::vector<double>
+parseState()
+{
 	//         return torch.Tensor(ability+item+types+moves+move_pp + move_disabled +status+stats
 	//         +stat_boosts+sub_hp+trapped_counter+volatile_status)
 	std::ifstream ifstate("pokemon-showdown/battle_test_jsons/test.json");
@@ -139,7 +160,7 @@ std::vector<double> parseState() {
 	std::ifstream ifweather("data/weather.json");
 	json state, moves, pokedex, abilities, items, types, status, volatiles, sideconds, slotconds, terrain, weather;
 	ifstate >> state;
-	std::cerr << "MADE IT HERE" << std::endl;	
+	std::cerr << "MADE IT HERE" << std::endl;
 	ifmoves >> moves;
 	ifpokedex >> pokedex;
 	ifabilities >> abilities;
@@ -153,17 +174,17 @@ std::vector<double> parseState() {
 	ifweather >> weather;
 	std::vector<double> result, tmp;
 
-	for (int side_i = 0; side_i < 2; side_i ++){
+	for (int side_i = 0; side_i < 2; side_i++) {
 		// Iterate through map of Pokemon
 		std::map<std::string, json> poke_map;
-		for (json mon: state["sides"][side_i]["pokemon"]){
+		for (json mon: state["sides"][side_i]["pokemon"]) {
 			std::string poke_id = mon["speciesState"]["id"];
 			poke_map.insert(std::make_pair(poke_id, mon));
 		}
 		std::map<std::string, json>::iterator poke_it = poke_map.begin();
-		while(poke_it != poke_map.end()) {
-			json pokemon = poke_it -> second;
-			
+		while (poke_it != poke_map.end()) {
+			json pokemon = poke_it->second;
+
 			// Append their active status
 			result.push_back(int(pokemon["isActive"]));
 			// Append Pokemon ability
@@ -177,14 +198,15 @@ std::vector<double> parseState() {
 
 			// Append move_id, move pp, move max pp, and move status
 			std::map<int, json> move_map;
-			for (json move: pokemon["moveSlots"]){
+			for (json move: pokemon["moveSlots"]) {
 				std::string move_id = move["id"];
 				move_map.insert(std::make_pair(moves[move_id], move));
 			}
 			std::map<int, json>::iterator move_it = move_map.begin();
-			while(move_it != move_map.end()) {
+			while (move_it != move_map.end()) {
 				result.push_back(move_it->first);
-				result.push_back(2 * double((move_it->second)["pp"]) / double((move_it->second)["maxpp"]) - 1);
+				result.push_back(
+					2 * double((move_it->second)["pp"]) / double((move_it->second)["maxpp"]) - 1);
 				result.push_back(2 * int((move_it->second)["disabled"]) - 1);
 				move_it++;
 			}
@@ -197,7 +219,7 @@ std::vector<double> parseState() {
 			// Append trapped
 			result.push_back(2 * int(pokemon["trapped"]) - 1);
 			// Append Pokemon volatiles if active
-			if (pokemon["isActive"]){
+			if (pokemon["isActive"]) {
 				tmp = addVolVector(pokemon["volatiles"], volatiles, tmp);
 			}
 			poke_it++;
@@ -207,28 +229,24 @@ std::vector<double> parseState() {
 
 		// Append side conditions
 		std::vector<double> sideconds_vector(sideconds.size(), -1);
-		double spikes_ctr = -1, tspikes_ctr = spikes_ctr, ref_ctr = spikes_ctr, ls_ctr = spikes_ctr, av_ctr = spikes_ctr, tw_ctr = spikes_ctr;
-		if(state["sides"][side_i]["sideConditions"].size() > 0){
-			for(json cond : state["sides"][side_i]["sideConditions"]){
-				if (sideconds.contains(cond["id"])){
+		double spikes_ctr = -1, tspikes_ctr = spikes_ctr, ref_ctr = spikes_ctr, ls_ctr = spikes_ctr,
+		       av_ctr = spikes_ctr, tw_ctr = spikes_ctr;
+		if (state["sides"][side_i]["sideConditions"].size() > 0) {
+			for (json cond: state["sides"][side_i]["sideConditions"]) {
+				if (sideconds.contains(cond["id"])) {
 					std::string cond_id = cond["id"];
 					sideconds_vector.at(sideconds[cond_id]) = 1;
-					if (cond_id == "spikes"){
+					if (cond_id == "spikes") {
 						spikes_ctr = double(sideconds["spikes"]["layers"]) / 3 * 2 - 1;
-					}
-					else if (cond_id == "toxicspikes"){
+					} else if (cond_id == "toxicspikes") {
 						tspikes_ctr = double(sideconds["toxicspikes"]["layers"]) - 1;
-					}
-					else if (cond_id == "reflect"){
+					} else if (cond_id == "reflect") {
 						ref_ctr = double(sideconds["reflect"]["duration"]) / 7 * 2 - 1;
-					}
-					else if (cond_id == "lightscreen"){
+					} else if (cond_id == "lightscreen") {
 						ls_ctr = double(sideconds["lightscreen"]["duration"]) / 7 * 2 - 1;
-					}
-					else if (cond_id == "auroraveil"){
+					} else if (cond_id == "auroraveil") {
 						av_ctr = double(sideconds["auroraveil"]["duration"]) / 7 * 2 - 1;
-					}
-					else if (cond_id == "tailwind"){
+					} else if (cond_id == "tailwind") {
 						tw_ctr = double(sideconds["tailwind"]["duration"]) / 7 * 2 - 1;
 					}
 				}
@@ -244,21 +262,19 @@ std::vector<double> parseState() {
 
 		// Append slot conditions (future sight, wish)
 		std::vector<double> slotconds_vector(slotconds.size(), -1);
-		double wish_d = -1, wish_hp = wish_d, future_move = wish_d, future_d = wish_d; 
-		if(state["sides"][side_i]["slotConditions"].size() > 0){
-			for(json cond : state["sides"][side_i]["slotConditions"]){
-				if (slotconds.contains(cond["id"])){
+		double wish_d = -1, wish_hp = wish_d, future_move = wish_d, future_d = wish_d;
+		if (state["sides"][side_i]["slotConditions"].size() > 0) {
+			for (json cond: state["sides"][side_i]["slotConditions"]) {
+				if (slotconds.contains(cond["id"])) {
 					std::string cond_id = cond["id"];
 					slotconds_vector.at(slotconds[cond_id]) = 1;
-					if (cond_id == "wish"){
-						wish_d = double(slotconds["wish"]["duration"]) * 2 - 1 ;
+					if (cond_id == "wish") {
+						wish_d = double(slotconds["wish"]["duration"]) * 2 - 1;
 						wish_hp = normStat(double(slotconds["wish"]["hp"]));
-					}
-					else if (cond_id == "futuremove"){
+					} else if (cond_id == "futuremove") {
 						future_move = 1;
 						future_d = double(slotconds["futuremove"]["duration"]) - 1;
 					}
-					
 				}
 			}
 		}
@@ -276,24 +292,24 @@ std::vector<double> parseState() {
 
 	// Append trick room
 	double tr = -1, tr_ctr = tr;
-	if (state["field"]["pseudoWeather"].size() > 0){
-		for(json pweather : state["field"]["pseudoWeather"]){
-			if (pweather["id"] == "trickroom"){
+	if (state["field"]["pseudoWeather"].size() > 0) {
+		for (json pweather: state["field"]["pseudoWeather"]) {
+			if (pweather["id"] == "trickroom") {
 				tr = 1;
 				tr_ctr = pweather["duration"];
-			}	
+			}
 		}
 	}
 	result.push_back(tr);
 	result.push_back(tr_ctr);
 
 	// Print out state vector
-	for (const double& i : result) {
-    	std::cerr << i << "  " << std::endl;
-  	}
+	for (const double &i: result) {
+		std::cerr << i << "  " << std::endl;
+	}
 	std::cerr << result.size() << std::endl;
-  return result;
+	return result;
 }
-}
+} // namespace parse_state
 
 #endif /* PARSE_STATE_HH */

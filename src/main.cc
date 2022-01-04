@@ -16,11 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "showdown.hh"
-#include "random_player.hh"
-#include "parse_state.hh"
-#include <main.hh>
+#include "main.hh"
 
-int main(){
+#include "parse_state.hh"
+#include "player.hh"
+#include "random_player.hh"
+#include "showdown.hh"
+
+int
+main()
+{
 	parse_state::parseState();
 }

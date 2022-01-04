@@ -18,10 +18,11 @@
 
 #include "showdown.hh"
 
+#include <sys/wait.h>
+#include <unistd.h>
+
 #include <string>
 #include <vector>
-#include <unistd.h>
-#include <sys/wait.h>
 
 namespace showdown {
 
@@ -85,11 +86,11 @@ Showdown::start(const std::string &showdown_script, const std::vector<std::strin
 	}
 
 	pid = fork();
-	switch(pid) {
+	switch (pid) {
 	case -1: // failed to fork child
 		success = false;
 		goto cleanup_fork;
-	case 0:  // child
+	case 0: // child
 		/* dup2(writepipe[0], STDIN_FILENO); */
 		close(writepipe[0]);
 		/* dup2(readpipe[1], STDOUT_FILENO); */
@@ -118,4 +119,4 @@ cleanup_readpipe:
 	delete[] argv;
 	return success;
 }
-}
+} // namespace showdown

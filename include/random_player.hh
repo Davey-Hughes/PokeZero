@@ -19,8 +19,8 @@
 #ifndef RANDOM_PLAYER_HH
 #define RANDOM_PLAYER_HH
 
-#include <vector>
 #include <thread>
+#include <vector>
 
 #include "player.hh"
 
@@ -38,6 +38,6 @@ private:
 	size_t randomInt(size_t, size_t);
 	std::vector<std::thread> threads;
 };
-}
+} // namespace showdown
 
 #endif /* RANDOM_PLAYER_HH */

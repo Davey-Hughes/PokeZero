@@ -18,10 +18,9 @@
 
 #include "random_player.hh"
 
-#include <vector>
-#include <thread>
-
 #include <nlohmann/json.hpp>
+#include <thread>
+#include <vector>
 
 namespace showdown {
 
@@ -77,4 +76,4 @@ RandomPlayer::randomInt(size_t start, size_t end)
 	auto random_roll = std::bind(roll, std::ref(this->rng));
 	return random_roll();
 }
-}
+} // namespace showdown

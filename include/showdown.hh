@@ -30,15 +30,13 @@ public:
 	~Showdown();
 
 	bool start(const std::string &, const std::vector<std::string> &);
-	bool start(const std::string &) {
-		return this->start(showdown_script, {});
-	}
+	bool start(const std::string &) { return this->start(showdown_script, {}); }
 
-	template<typename... Ts>
-	bool start(const std::string &showdown_script, Ts&... args) {
+	template <typename... Ts>
+	bool start(const std::string &showdown_script, Ts &...args)
+	{
 		return this->start(showdown_script, {args...});
 	}
-
 
 private:
 	std::string showdown_script = "";
@@ -49,7 +47,6 @@ private:
 		int writefd = -1;
 	} child;
 };
-}
-
+} // namespace showdown
 
 #endif /* SHOWDOWN_HH */

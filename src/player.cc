@@ -18,20 +18,22 @@
 
 #include "player.hh"
 
-#include <fstream>
-#include <locale>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <stdexcept>
-#include <unistd.h>
 #include <string.h>
-#include <random>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <unistd.h>
+
+#include <condition_variable>
+#include <fstream>
+#include <locale>
+#include <mutex>
+#include <random>
+#include <stdexcept>
+#include <thread>
 
 #define MAX_NAME_LENGTH 0xff
 
+namespace showdown {
 /*
  * constructor
  *
@@ -177,3 +179,4 @@ Player::closeSocketServer()
 
 	this->server_sockfd = -1;
 }
+} // namespace showdown

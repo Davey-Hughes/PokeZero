@@ -6,7 +6,7 @@ export TARGET := pokezero
 
 release: export OBJDIR := $(BUILD)/objects/release
 
-all run debug release:
+all run debug release format:
 	$(MAKE) $@ --no-print-directory -j -f makefiles/main.mk
 
 clean:

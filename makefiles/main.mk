@@ -22,6 +22,7 @@ CXXFLAGS := -std=c++20 $(BASE_FLAGS)
 SYSINCLUDE :=
 CXXINCLUDE := -Iinclude $(shell pkg-config nlohmann_json --cflags)
 CXXSRC := $(wildcard src/*.cc)
+CXXINC := $(wildcard include/*.hh)
 CXXOBJS := $(patsubst %,$(OBJDIR)/%.o,$(basename $(CXXSRC)))
 CXXDEPS := $(patsubst %,$(DEPDIR)/%.d,$(basename $(CXXSRC)))
 
@@ -34,9 +35,12 @@ PRECOMPILE =
 # postcompile step
 POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
-.PHONY: all debug release run showdown
+.PHONY: all debug release run showdown format
 
-all: debug $(GIT_SUBMODULES) showdown
+all: format debug $(GIT_SUBMODULES) showdown
+
+format: $(CXXSRC)
+	clang-format -i $(CXXSRC) $(CXXINC)
 
 # updating git submodules
 GIT=git

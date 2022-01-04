@@ -19,30 +19,33 @@
 #ifndef PLAYER_HH
 #define PLAYER_HH
 
-#include <iostream>
-#include <string>
-#include <random>
-#include <functional>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <unistd.h>
-#include <sstream>
 #include <sys/socket.h>
+#include <unistd.h>
+
+#include <condition_variable>
+#include <functional>
+#include <iostream>
+#include <mutex>
+#include <random>
+#include <sstream>
+#include <string>
+#include <thread>
 
 #define RECV_BUFSIZE 4096
 
-namespace {
-struct client {
+namespace showdown {
+struct Client {
 public:
 	std::string name;
 	std::atomic_int sockfd = -1;
 	std::mutex socket_lock;
 	std::condition_variable socket_ready;
 
-	void Close() {
+	void Close()
+	{
 		std::unique_lock<std::mutex> lk(socket_lock);
-		if (this->sockfd > -1) close(this->sockfd);
+		if (this->sockfd > -1)
+			close(this->sockfd);
 		this->sockfd = -1;
 		lk.unlock();
 	}
@@ -54,7 +57,8 @@ public:
 	 * the leftover bytes read (if any) are left in the recv_stream for the
 	 * next call to RecvMessage()
 	 */
-	std::string RecvMessage() {
+	std::string RecvMessage()
+	{
 		if (this->sockfd < 0) {
 			std::unique_lock<std::mutex> lk(this->socket_lock);
 			while (this->sockfd < 0) {
@@ -64,7 +68,7 @@ public:
 		}
 
 		char buf[RECV_BUFSIZE];
-		size_t bytes_read;
+		ssize_t bytes_read;
 		size_t message_len = 0;
 
 		while ((bytes_read = recv(this->sockfd, buf, RECV_BUFSIZE, 0)) > 0) {
@@ -91,20 +95,17 @@ public:
 		return "";
 	}
 
-	~client() { Close(); }
+	~Client() { Close(); }
 
 private:
 	std::stringstream recv_stream;
-
 };
-}
 
 class Player {
 public:
 	virtual void loop() = 0;
 
-	[[maybe_unused]]
-	static constexpr bool force_create = true;
+	[[maybe_unused]] static constexpr bool force_create = true;
 
 	/* constructor */
 	Player(const std::string &);
@@ -119,12 +120,13 @@ protected:
 	std::string socket_name = "";
 	int server_sockfd = -1;
 	std::mt19937 rng;
-	client client;
+	Client client;
 	std::vector<std::thread> threads;
 
 	int createSocket(bool force = false);
 	bool connectHelper();
 	void closeSocketServer();
 };
+} // namespace showdown
 
 #endif /* PLAYER_HH */
