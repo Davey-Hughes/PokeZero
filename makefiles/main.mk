@@ -1,4 +1,3 @@
-BINDIR := $(BUILD)/bin
 DEPDIR := $(OBJDIR)/objects/.deps
 
 BASE_FLAGS := -Wall -Werror -Wextra -pedantic-errors
@@ -17,7 +16,6 @@ LDLIBS :=
 # flags required for dependency generation; passed to compilers
 DEPFLAGS = -MQ $@ -MD -MP -MF $(DEPDIR)/$*.Td
 
-CXXTARGET := $(TARGET)
 CXXFLAGS := -std=c++20 $(BASE_FLAGS)
 SYSINCLUDE :=
 CXXINCLUDE := -Iinclude $(shell pkg-config nlohmann_json --cflags)
@@ -29,32 +27,17 @@ CXXDEPS := $(patsubst %,$(DEPDIR)/%.d,$(basename $(CXXSRC)))
 # compile C++ source files
 COMPILE.cc = $(CXX) $(DEPFLAGS) $(CXXFLAGS) $(CXXINCLUDE) $(SYSINCLUDE) -c -o $@
 # link object files to binary
-LINK.o = $(LD) $(LDFLAGS) $(LDLIBS) -o $(BINDIR)/$@
+LINK.o = $(LD) $(LDFLAGS) $(LDLIBS) -o $@
 # precompile step
 PRECOMPILE =
 # postcompile step
 POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
-.PHONY: all debug release run showdown format
+.PHONY: all debug release showdown format run
 
 all: format debug $(GIT_SUBMODULES) showdown
 
-format: $(CXXSRC)
-	clang-format -i $(CXXSRC) $(CXXINC)
-
-# updating git submodules
-GIT=git
-GIT_SUBMODULES = $(shell sed -nE 's/path = +(.+)/\1\/.git/ p' .gitmodules | paste -s -)
-$(GIT_SUBMODULES): %/.git: .gitmodules
-	$(GIT) submodule update --init $*
-	@touch $@
-
-# building the showdown source code
-SHOWDOWN_DIR := ./pokemon-showdown
-showdown: $(GIT_SUBMODULES)
-	$(SHOWDOWN_DIR)/build
-
-# running PokeEnv
+# run PokeZero
 RUN_ENV :=
 RUN_ARGS :=
 ifneq ($(OS), Windows_NT)
@@ -64,23 +47,32 @@ ifneq ($(OS), Windows_NT)
 		RUN_ENV += MallocNanoZone=0
 	endif
 endif
-run: PokeZero showdown
-	$(RUN_ENV) ./$(CXXTARGET)
+run: $(TARGET) $(CXXSRC) $(CXXINC) showdown
+	$(RUN_ENV) ./$(TARGET)
 
-PokeZero: $(CXXTARGET)
-	ln -sf $(BINDIR)/$< $<
+# format all source and header files
+format: $(CXXSRC)
+	clang-format -i $(CXXSRC) $(CXXINC)
 
+# debug flags
 debug: CXXFLAGS += -DDEBUG -g -Og
 debug: LDLIBS += $(SANITIZE)
-debug: PokeZero
+debug: $(TARGET)
 
+# release flags
 release: CXXFLAGS += -O3 -march=native
-release: PokeZero
+release: $(TARGET)
 
+# symbolic link actual executable to target in root dir
+$(TARGET): $(CXXTARGET)
+	ln -sf $(CXXTARGET) $(TARGET)
+
+# run the linker to create the executable
 $(CXXTARGET): $(CXXOBJS)
 	@mkdir -p $(BINDIR)
 	$(LINK.o) $^
 
+# compile object files from every source file
 $(OBJDIR)/%.o: %.cc
 $(OBJDIR)/%.o: %.cc | $(DEPDIR)/%.d
 	$(shell mkdir -p $(dir $(CXXOBJS)) >/dev/null)
