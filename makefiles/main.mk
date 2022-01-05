@@ -55,17 +55,17 @@ format: $(CXXSRC)
 	clang-format -i $(CXXSRC) $(CXXINC)
 
 # debug flags
-debug: CXXFLAGS += -DDEBUG -g -Og
+debug: CXXFLAGS += -glldb -O0 -DDEBUG
 debug: LDLIBS += $(SANITIZE)
 debug: $(TARGET)
+	ln -sf $(CXXTARGET) $(TARGET)
 
 # release flags
 release: CXXFLAGS += -O3 -march=native
 release: $(TARGET)
-
-# symbolic link actual executable to target in root dir
-$(TARGET): $(CXXTARGET)
 	ln -sf $(CXXTARGET) $(TARGET)
+
+$(TARGET): $(CXXTARGET)
 
 # run the linker to create the executable
 $(CXXTARGET): $(CXXOBJS)
