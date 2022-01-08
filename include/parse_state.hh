@@ -76,16 +76,36 @@ struct PokemonState {
 
 using json = nlohmann::json;
 
+// Normalizes a Pokemon's stat to be approximately in range [-1, 1], assuming highest stat is 500
 double
 normStat(double stat)
 {
 	return stat / 500 * 2 - 1;
 }
 
+// Normalizes stat boosts to [-1, 1]
 double
 normBoost(double boost)
 {
 	return (boost + 6) / 6 - 1;
+}
+
+void
+printState(PokemonState *state)
+{
+	std::string indent = "    ";
+	std::string double_indent = "        ";
+	for (int i = 0; i < 2; i++) {
+		if (i == 0) {
+			std::cout << "Side: Self" << std::endl;
+		} else {
+			std::cout << "Side: Opponent" << std::endl;
+		}
+		for (int j = 1; j < 7; j++) {
+			std::cout << indent << "Pokemon " << j << ":" << std::endl;
+			std::cout << double_indent << "isActive: " << state->sides[i].pokemon[j].active << std::endl;
+		}
+	}
 }
 
 constexpr size_t struct_arr_sizeof = sizeof(PokemonState) / sizeof(double);
@@ -133,12 +153,6 @@ parseState()
 	std::cout << "sizeof PokemonState: " << sizeof(PokemonState) << '\n';
 	std::cout << "sizeof double: " << sizeof(double) << '\n';
 	std::cout << "PokemonState num elements: " << struct_arr_sizeof << '\n';
-	// /* set some values via the struct */
-	// pokestate->a = 1;
-	// mystruct->b = 5;
-	// mystruct->substruct_bb.l = -5;
-	// mystruct->myarray_in_struct[4] = 20;
-
 #endif // DEBUG
 
 	for (int side_i = 0; side_i < 2; side_i++) {
@@ -154,24 +168,24 @@ parseState()
 		while (poke_it != poke_map.end()) {
 			json pokemon_curr = poke_it->second;
 
-			// auto poke = &(pokestate->sides[side_i].pokemon[poke_idx]);
+			auto poke = &(pokestate->sides[side_i].pokemon[poke_idx]);
 
 			// Append their active status
-			pokestate->sides[side_i].pokemon[poke_idx].active = 2 * int(pokemon_curr["isActive"]) - 1;
+			poke->active = 2 * int(pokemon_curr["isActive"]) - 1;
 
 			// Append Pokemon ability
 			std::string ability = pokemon_curr["ability"];
-			pokestate->sides[side_i].pokemon[poke_idx].ability = abilities[ability];
+			poke->ability = abilities[ability];
 
 			// Append Pokemon item
 			std::string item = pokemon_curr["item"];
-			pokestate->sides[side_i].pokemon[poke_idx].item = items[item];
+			poke->item = items[item];
 
 			// Append Pokemon types
 			for (std::string mon_type: pokemon_curr["types"]) {
 				if (all_types.contains(mon_type)) {
 					int type_id = all_types[mon_type];
-					pokestate->sides[side_i].pokemon[poke_idx].types[type_id] = 1;
+					poke->types[type_id] = 1;
 				}
 			}
 
@@ -184,48 +198,39 @@ parseState()
 			std::map<int, json>::iterator move_it = move_map.begin();
 			int move_idx = 0;
 			while (move_it != move_map.end()) {
-				pokestate->sides[side_i].pokemon[poke_idx].moves[move_idx].id = move_it->first;
-				pokestate->sides[side_i].pokemon[poke_idx].moves[move_idx].pp =
+				poke->moves[move_idx].id = move_it->first;
+				poke->moves[move_idx].pp =
 					2 * double((move_it->second)["pp"]) / double((move_it->second)["maxpp"]) - 1;
-				pokestate->sides[side_i].pokemon[poke_idx].moves[move_idx].disabled =
-					2 * int((move_it->second)["disabled"]) - 1;
+				poke->moves[move_idx].disabled = 2 * int((move_it->second)["disabled"]) - 1;
 				move_it++;
 				move_idx++;
 			}
 
 			// Append status
 			std::string curr_status = pokemon_curr["status"];
-			pokestate->sides[side_i].pokemon[poke_idx].status[all_status[curr_status]] = 1;
+			poke->status[all_status[curr_status]] = 1;
 
 			// Append stats
-			pokestate->sides[side_i].pokemon[poke_idx].stats[0] =
+			poke->stats[0] =
 				2 * double(pokemon_curr["hp"]) / double(pokemon_curr["baseStoredStats"]["hp"]) - 1;
-			pokestate->sides[side_i].pokemon[poke_idx].stats[1] =
-				normStat(pokemon_curr["baseStoredStats"]["hp"]);
-			pokestate->sides[side_i].pokemon[poke_idx].stats[2] =
-				normStat(pokemon_curr["baseStoredStats"]["atk"]);
-			pokestate->sides[side_i].pokemon[poke_idx].stats[3] =
-				normStat(pokemon_curr["baseStoredStats"]["def"]);
-			pokestate->sides[side_i].pokemon[poke_idx].stats[4] =
-				normStat(pokemon_curr["baseStoredStats"]["spa"]);
-			pokestate->sides[side_i].pokemon[poke_idx].stats[5] =
-				normStat(pokemon_curr["baseStoredStats"]["spd"]);
-			pokestate->sides[side_i].pokemon[poke_idx].stats[6] =
-				normStat(pokemon_curr["baseStoredStats"]["spe"]);
+			poke->stats[1] = normStat(pokemon_curr["baseStoredStats"]["hp"]);
+			poke->stats[2] = normStat(pokemon_curr["baseStoredStats"]["atk"]);
+			poke->stats[3] = normStat(pokemon_curr["baseStoredStats"]["def"]);
+			poke->stats[4] = normStat(pokemon_curr["baseStoredStats"]["spa"]);
+			poke->stats[5] = normStat(pokemon_curr["baseStoredStats"]["spd"]);
+			poke->stats[6] = normStat(pokemon_curr["baseStoredStats"]["spe"]);
 
 			// Append stat boosts
-			pokestate->sides[side_i].pokemon[poke_idx].boosts[0] = normBoost(pokemon_curr["boosts"]["atk"]);
-			pokestate->sides[side_i].pokemon[poke_idx].boosts[1] = normBoost(pokemon_curr["boosts"]["def"]);
-			pokestate->sides[side_i].pokemon[poke_idx].boosts[2] = normBoost(pokemon_curr["boosts"]["spa"]);
-			pokestate->sides[side_i].pokemon[poke_idx].boosts[3] = normBoost(pokemon_curr["boosts"]["spd"]);
-			pokestate->sides[side_i].pokemon[poke_idx].boosts[4] = normBoost(pokemon_curr["boosts"]["spe"]);
-			pokestate->sides[side_i].pokemon[poke_idx].boosts[5] =
-				normBoost(pokemon_curr["boosts"]["accuracy"]);
-			pokestate->sides[side_i].pokemon[poke_idx].boosts[6] =
-				normBoost(pokemon_curr["boosts"]["evasion"]);
+			poke->boosts[0] = normBoost(pokemon_curr["boosts"]["atk"]);
+			poke->boosts[1] = normBoost(pokemon_curr["boosts"]["def"]);
+			poke->boosts[2] = normBoost(pokemon_curr["boosts"]["spa"]);
+			poke->boosts[3] = normBoost(pokemon_curr["boosts"]["spd"]);
+			poke->boosts[4] = normBoost(pokemon_curr["boosts"]["spe"]);
+			poke->boosts[5] = normBoost(pokemon_curr["boosts"]["accuracy"]);
+			poke->boosts[6] = normBoost(pokemon_curr["boosts"]["evasion"]);
 
 			// Append trapped
-			pokestate->sides[side_i].pokemon[poke_idx].trapped = 2 * int(pokemon_curr["trapped"]) - 1;
+			poke->trapped = 2 * int(pokemon_curr["trapped"]) - 1;
 
 			// Append Pokemon volatiles if active
 			if (pokemon_curr["isActive"]) {
@@ -318,6 +323,7 @@ parseState()
 		}
 	}
 
+#ifdef DEBUG
 	// Print out state vector
 	std::cout << "{\n";
 	size_t count = 0;
@@ -330,6 +336,9 @@ parseState()
 		}
 	}
 	std::cout << "\n}\n";
+	printState(pokestate);
+#endif // DEBUG
+
 	return state_arr;
 }
 } // namespace parse_state

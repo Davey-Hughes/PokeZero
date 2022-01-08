@@ -1,1 +1,20 @@
-{"steel": 0, "dragon": 1, "normal": 2, "fire": 3, "ground": 4, "ghost": 5, "water": 6, "bug": 7, "fairy": 8, "psychic": 9, "electric": 10, "grass": 11, "rock": 12, "dark": 13, "ice": 14, "poison": 15, "fighting": 16, "flying": 17}
+{
+    "Steel": 0,
+    "Dragon": 1,
+    "Normal": 2,
+    "Fire": 3,
+    "Ground": 4,
+    "Ghost": 5,
+    "Water": 6,
+    "Bug": 7,
+    "Fairy": 8,
+    "Psychic": 9,
+    "Electric": 10,
+    "Grass": 11,
+    "Rock": 12,
+    "Dark": 13,
+    "Ice": 14,
+    "Poison": 15,
+    "Fighting": 16,
+    "Flying": 17
+}
