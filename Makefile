@@ -10,7 +10,10 @@ export CXXTARGET := $(BINDIR)/$(TARGET)_debug
 
 # passes C++ building to another makefile to assist in separate release and
 # debug builds
-all debug release format run $(TARGET):
+all debug release format $(TARGET):
+	$(MAKE) $@ --no-print-directory -j -f makefiles/main.mk
+
+run:
 	$(MAKE) $@ --no-print-directory -j -f makefiles/main.mk
 
 # update git submodules

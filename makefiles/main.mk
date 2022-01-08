@@ -47,8 +47,14 @@ ifneq ($(OS), Windows_NT)
 		RUN_ENV += MallocNanoZone=0
 	endif
 endif
-run: $(TARGET) $(CXXSRC) $(CXXINC) showdown
+
+ifeq (,$(wildcard $(TARGET)))
+run:
+	$(error Build executable first with `make debug` or `make release`)
+else
+run:
 	$(RUN_ENV) ./$(TARGET)
+endif
 
 # format all source and header files
 format: $(CXXSRC)
