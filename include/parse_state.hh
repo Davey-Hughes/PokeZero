@@ -25,7 +25,52 @@
 #include <map>
 #include <nlohmann/json.hpp>
 
+#include "debug_helper.hh"
+
 namespace parse_state {
+
+struct substruct_cc {
+	double cc_a;
+	double cc_b;
+	double cc_c;
+};
+struct changeme {
+	double a;
+	double b;
+	double c;
+	double d;
+
+	struct {
+		double e;
+		double f;
+		double g;
+	} substruct_aa;
+
+	double h;
+	double i;
+	double k;
+
+	struct {
+		double l;
+		double m;
+		double n;
+		double o;
+		double p;
+	} substruct_bb;
+
+	double myarray_in_struct[16];
+
+	substruct_cc mysubstruct_cc;
+
+	struct {
+		double my_second_array[6];
+	} substruct_dd;
+
+	double q;
+	double r;
+	double s;
+};
+
 using json = nlohmann::json;
 
 double
@@ -40,79 +85,60 @@ normBoost(double boost)
 	return (boost + 6) / 6 - 1;
 }
 
-std::vector<double>
-addNormStats(json boosts, std::vector<double> prev)
+void
+addNormStats(const json &boosts, std::vector<double> &prev)
 {
-	std::vector<double> tmp, res;
-	tmp.push_back(normBoost(boosts["atk"]));
-	tmp.push_back(normBoost(boosts["def"]));
-	tmp.push_back(normBoost(boosts["spa"]));
-	tmp.push_back(normBoost(boosts["spd"]));
-	tmp.push_back(normBoost(boosts["spe"]));
-	tmp.push_back(normBoost(boosts["accuracy"]));
-	tmp.push_back(normBoost(boosts["evasion"]));
-	res.reserve(prev.size() + tmp.size()); // preallocate memory
-	res.insert(res.end(), prev.begin(), prev.end());
-	res.insert(res.end(), tmp.begin(), tmp.end());
-	return res;
+	prev.push_back(normBoost(boosts["atk"]));
+	prev.push_back(normBoost(boosts["def"]));
+	prev.push_back(normBoost(boosts["spa"]));
+	prev.push_back(normBoost(boosts["spd"]));
+	prev.push_back(normBoost(boosts["spe"]));
+	prev.push_back(normBoost(boosts["accuracy"]));
+	prev.push_back(normBoost(boosts["evasion"]));
 }
 
-std::vector<double>
-concatVectors(std::vector<double> prev, std::vector<double> tmp)
+void
+addNormStats(const json &stats, int hp, std::vector<double> &prev)
 {
-	std::vector<double> res;
-	res.reserve(prev.size() + tmp.size()); // preallocate memory
-	res.insert(res.end(), prev.begin(), prev.end());
-	res.insert(res.end(), tmp.begin(), tmp.end());
-	return res;
+	prev.push_back(2 * double(hp) / double(stats["hp"]) - 1);
+	prev.push_back(normStat(stats["hp"]));
+	prev.push_back(normStat(stats["atk"]));
+	prev.push_back(normStat(stats["def"]));
+	prev.push_back(normStat(stats["spa"]));
+	prev.push_back(normStat(stats["spd"]));
+	prev.push_back(normStat(stats["spe"]));
 }
 
-std::vector<double>
-addNormStats(json stats, int hp, std::vector<double> prev)
+void
+concatVectors(std::vector<double> &prev, const std::vector<double> &next)
 {
-	std::vector<double> tmp, res;
-	tmp.push_back(2 * double(hp) / double(stats["hp"]) - 1);
-	tmp.push_back(normStat(stats["hp"]));
-	tmp.push_back(normStat(stats["atk"]));
-	tmp.push_back(normStat(stats["def"]));
-	tmp.push_back(normStat(stats["spa"]));
-	tmp.push_back(normStat(stats["spd"]));
-	tmp.push_back(normStat(stats["spe"]));
-	res = concatVectors(prev, tmp);
-	return res;
+	prev.insert(prev.end(), next.begin(), next.end());
 }
 
-std::vector<double>
-addStatusVector(json a, std::string query, std::vector<double> prev)
+void
+addStatusVector(const json &a, const std::string &query, std::vector<double> &prev)
 {
-	std::vector<double> res;
 	std::vector<double> a_vec(a.size(), -1);
 	a_vec.at(a[query]) = 1;
-	// Concatenate status vector with results vector
-	res = concatVectors(prev, a_vec);
-	return res;
+	concatVectors(prev, a_vec);
 }
 
-std::vector<double>
-addTypeVector(json a, json types, std::vector<double> prev)
+void
+addTypeVector(const json &a, const json &types, std::vector<double> &prev)
 {
 	std::vector<double> type_vector(types.size(), -1);
-	std::vector<double> res;
 	for (std::string mon_type: a) {
 		if (types.contains(mon_type)) {
 			type_vector.at(types[mon_type]) = 1;
 		}
 	}
-	// Concatenate types vector with results vector
-	res = concatVectors(prev, type_vector);
-	return res;
+	concatVectors(prev, type_vector);
 }
 
-std::vector<double>
-addVolVector(json a, json volatiles, std::vector<double> prev)
+void
+addVolVector(const json &a, const json &volatiles, std::vector<double> &prev)
 {
 	std::vector<double> vol_vector(volatiles.size(), -1);
-	std::vector<double> res;
 	if (a.size() > 0) {
 		for (json vol: a) {
 			if (volatiles.contains(vol["id"])) {
@@ -121,15 +147,12 @@ addVolVector(json a, json volatiles, std::vector<double> prev)
 			}
 		}
 	}
-	// Concatenate types vector with results vector
-	res = concatVectors(prev, vol_vector);
-	return res;
+	concatVectors(prev, vol_vector);
 }
 
-std::vector<double>
-addGameVector(json a, json weather, std::vector<double> prev)
+void
+addGameVector(const json &a, const json &weather, std::vector<double> &prev)
 {
-	std::vector<double> res;
 	std::vector<double> weather_vector(weather.size(), -1);
 	double weather_d = -1;
 	if (a.size() > 1) {
@@ -137,15 +160,15 @@ addGameVector(json a, json weather, std::vector<double> prev)
 		weather_vector.at(weather[w_id]) = 1;
 		weather_d = double(a["duration"]) / 7 * 2 - 1;
 	}
-	res = concatVectors(prev, weather_vector);
-	res.push_back(weather_d);
-	return res;
+	concatVectors(prev, weather_vector);
+	prev.push_back(weather_d);
 }
+
 std::vector<double>
 parseState()
 {
-	//         return torch.Tensor(ability+item+types+moves+move_pp + move_disabled +status+stats
-	//         +stat_boosts+sub_hp+trapped_counter+volatile_status)
+	// return torch.Tensor(ability+item+types+moves+move_pp + move_disabled +status+stats
+	// +stat_boosts+sub_hp+trapped_counter+volatile_status)
 	std::ifstream ifstate("pokemon-showdown/battle_test_jsons/test.json");
 	std::ifstream ifmoves("data/move_id.json");
 	std::ifstream ifpokedex("data/pokedex.json");
@@ -160,7 +183,9 @@ parseState()
 	std::ifstream ifweather("data/weather.json");
 	json state, moves, pokedex, abilities, items, types, status, volatiles, sideconds, slotconds, terrain, weather;
 	ifstate >> state;
-	std::cerr << "MADE IT HERE" << std::endl;
+
+	DEBUG_STDOUT("MADE IT HERE");
+
 	ifmoves >> moves;
 	ifpokedex >> pokedex;
 	ifabilities >> abilities;
@@ -172,33 +197,38 @@ parseState()
 	ifslotconds >> slotconds;
 	ifterrain >> terrain;
 	ifweather >> weather;
-	std::vector<double> result, tmp;
+
+	std::vector<double> result;
 
 	for (int side_i = 0; side_i < 2; side_i++) {
 		// Iterate through map of Pokemon
 		std::map<std::string, json> poke_map;
-		for (json mon: state["sides"][side_i]["pokemon"]) {
+		for (json &mon: state["sides"][side_i]["pokemon"]) {
 			std::string poke_id = mon["speciesState"]["id"];
 			poke_map.insert(std::make_pair(poke_id, mon));
 		}
+
 		std::map<std::string, json>::iterator poke_it = poke_map.begin();
 		while (poke_it != poke_map.end()) {
 			json pokemon = poke_it->second;
 
 			// Append their active status
 			result.push_back(int(pokemon["isActive"]));
+
 			// Append Pokemon ability
 			std::string ability = pokemon["ability"];
 			result.push_back(abilities[ability]);
+
 			// Append Pokemon item
 			std::string item = pokemon["item"];
 			result.push_back(items[item]);
+
 			// Append Pokemon types
-			result = addTypeVector(pokemon["types"], types, result);
+			addTypeVector(pokemon["types"], types, result);
 
 			// Append move_id, move pp, move max pp, and move status
 			std::map<int, json> move_map;
-			for (json move: pokemon["moveSlots"]) {
+			for (json &move: pokemon["moveSlots"]) {
 				std::string move_id = move["id"];
 				move_map.insert(std::make_pair(moves[move_id], move));
 			}
@@ -210,32 +240,37 @@ parseState()
 				result.push_back(2 * int((move_it->second)["disabled"]) - 1);
 				move_it++;
 			}
+
 			// Append status
-			result = addStatusVector(status, pokemon["status"], result);
+			addStatusVector(status, pokemon["status"], result);
+
 			// Append stats
-			result = addNormStats(pokemon["baseStoredStats"], pokemon["hp"], result);
+			addNormStats(pokemon["baseStoredStats"], pokemon["hp"], result);
+
 			// Append stat boosts
-			result = addNormStats(pokemon["boosts"], result);
+			addNormStats(pokemon["boosts"], result);
+
 			// Append trapped
 			result.push_back(2 * int(pokemon["trapped"]) - 1);
+
 			// Append Pokemon volatiles if active
 			if (pokemon["isActive"]) {
-				tmp = addVolVector(pokemon["volatiles"], volatiles, tmp);
+				addVolVector(pokemon["volatiles"], volatiles, result);
 			}
 			poke_it++;
 		}
-		result = concatVectors(result, tmp);
-		tmp.clear();
 
 		// Append side conditions
 		std::vector<double> sideconds_vector(sideconds.size(), -1);
-		double spikes_ctr = -1, tspikes_ctr = spikes_ctr, ref_ctr = spikes_ctr, ls_ctr = spikes_ctr,
-		       av_ctr = spikes_ctr, tw_ctr = spikes_ctr;
+		double spikes_ctr, tspikes_ctr, ref_ctr, ls_ctr, av_ctr, tw_ctr;
+		spikes_ctr = tspikes_ctr = ref_ctr = ls_ctr = av_ctr = tw_ctr = -1;
+
 		if (state["sides"][side_i]["sideConditions"].size() > 0) {
-			for (json cond: state["sides"][side_i]["sideConditions"]) {
+			for (json &cond: state["sides"][side_i]["sideConditions"]) {
 				if (sideconds.contains(cond["id"])) {
 					std::string cond_id = cond["id"];
 					sideconds_vector.at(sideconds[cond_id]) = 1;
+
 					if (cond_id == "spikes") {
 						spikes_ctr = double(sideconds["spikes"]["layers"]) / 3 * 2 - 1;
 					} else if (cond_id == "toxicspikes") {
@@ -252,7 +287,8 @@ parseState()
 				}
 			}
 		}
-		result = concatVectors(result, sideconds_vector);
+
+		concatVectors(result, sideconds_vector);
 		result.push_back(spikes_ctr);
 		result.push_back(tspikes_ctr);
 		result.push_back(ref_ctr);
@@ -264,7 +300,7 @@ parseState()
 		std::vector<double> slotconds_vector(slotconds.size(), -1);
 		double wish_d = -1, wish_hp = wish_d, future_move = wish_d, future_d = wish_d;
 		if (state["sides"][side_i]["slotConditions"].size() > 0) {
-			for (json cond: state["sides"][side_i]["slotConditions"]) {
+			for (json &cond: state["sides"][side_i]["slotConditions"]) {
 				if (slotconds.contains(cond["id"])) {
 					std::string cond_id = cond["id"];
 					slotconds_vector.at(slotconds[cond_id]) = 1;
@@ -278,7 +314,8 @@ parseState()
 				}
 			}
 		}
-		result = concatVectors(result, slotconds_vector);
+
+		concatVectors(result, slotconds_vector);
 		result.push_back(wish_d);
 		result.push_back(wish_hp);
 		result.push_back(future_move);
@@ -286,9 +323,10 @@ parseState()
 	}
 
 	// Append weather
-	result = addGameVector(state["field"]["weatherState"], weather, result);
+	addGameVector(state["field"]["weatherState"], weather, result);
+
 	// Append terrain
-	result = addGameVector(state["field"]["terrainState"], terrain, result);
+	addGameVector(state["field"]["terrainState"], terrain, result);
 
 	// Append trick room
 	double tr = -1, tr_ctr = tr;
@@ -300,14 +338,58 @@ parseState()
 			}
 		}
 	}
+
 	result.push_back(tr);
 	result.push_back(tr_ctr);
 
+#ifdef DEBUG
 	// Print out state vector
-	for (const double &i: result) {
-		std::cerr << i << "  " << std::endl;
+	std::cout << "{\n";
+	size_t count = 0;
+	for (double &i: result) {
+		std::cout.precision(5);
+		std::cout << std::setfill(' ') << std::setw(10) << i << " ";
+		count++;
+		if (count % 10 == 0) {
+			std::cout << '\n';
+		}
 	}
-	std::cerr << result.size() << std::endl;
+	std::cout << "\n}\n";
+
+	std::cout << "result size: " << result.size() << "\n\n";
+#endif // DEBUG
+
+	constexpr size_t struct_arr_sizeof = sizeof(changeme) / sizeof(double);
+	std::array<double, struct_arr_sizeof> myarr;
+	myarr.fill(-1);
+
+#ifdef DEBUG
+	// overlay the struct changeme on our array
+	changeme *mystruct = (changeme *) myarr.data();
+
+	std::cout << "sizeof changeme: " << sizeof(changeme) << '\n';
+	std::cout << "sizeof double: " << sizeof(double) << '\n';
+	std::cout << "changeme num elements: " << struct_arr_sizeof << '\n';
+
+	std::cout << "[ ";
+	for (double &i: myarr) {
+		std::cout << std::setfill(' ') << std::setw(4) << i << " ";
+	}
+	std::cout << "]\n";
+
+	/* set some values via the struct */
+	mystruct->a = 1;
+	mystruct->b = 5;
+	mystruct->substruct_bb.l = -5;
+	mystruct->myarray_in_struct[4] = 20;
+
+	std::cout << "[ ";
+	for (double &i: myarr) {
+		std::cout << std::setfill(' ') << std::setw(4) << i << " ";
+	}
+	std::cout << "]\n";
+#endif // DEBUG
+
 	return result;
 }
 } // namespace parse_state
