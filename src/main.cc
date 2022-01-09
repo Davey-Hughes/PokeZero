@@ -25,6 +25,17 @@
 
 int
 main()
-{
-	parse_state::parseState();
+{ // Load example state as json
+	parse_state::json state;
+	std::ifstream ifstate("pokemon-showdown/battle_test_jsons/test.json");
+	ifstate >> state;
+
+	// Convert it to a string
+	std::string state_string = state.dump();
+
+	// Load relevant reference data json files
+	parse_state::AllPokemonData all_data = parse_state::generateAllData();
+
+	// Parse state string
+	parse_state::parseState(state_string, all_data);
 }
