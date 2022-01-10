@@ -18,24 +18,27 @@
 
 #include "main.hh"
 
-#include "parse_state.hh"
-#include "player.hh"
+#include <fstream>
+#include <nlohmann/json.hpp>
+
+#include "battle_parser.hh"
+#include "manager.hh"
 #include "random_player.hh"
-#include "showdown.hh"
 
 int
 main()
-{ // Load example state as json
-	parse_state::json state;
-	std::ifstream ifstate("pokemon-showdown/battle_test_jsons/test.json");
-	ifstate >> state;
+{
+	/*
+	 * auto battle_parser = pokezero::BattleParser();
+	 *
+	 * nlohmann::json state;
+	 * std::ifstream ifstate("pokemon-showdown/battle_test_jsons/test.json");
+	 * ifstate >> state;
+	 *
+	 * battle_parser.setState(state.dump());
+	 * battle_parser.getMLVec();
+	 */
 
-	// Convert it to a string
-	std::string state_string = state.dump();
-
-	// Load relevant reference data json files
-	parse_state::AllPokemonData all_data = parse_state::generateAllData();
-
-	// Parse state string
-	parse_state::parseState(state_string, all_data);
+	auto manager = pokezero::Manager<showdown::RandomPlayer, showdown::RandomPlayer>("manager");
+	manager.start();
 }

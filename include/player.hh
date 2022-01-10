@@ -41,7 +41,7 @@ public:
 	std::mutex socket_lock;
 	std::condition_variable socket_ready;
 
-	void Close()
+	void closeClient()
 	{
 		std::unique_lock<std::mutex> lk(socket_lock);
 		if (this->sockfd > -1)
@@ -57,7 +57,7 @@ public:
 	 * the leftover bytes read (if any) are left in the recv_stream for the
 	 * next call to RecvMessage()
 	 */
-	std::string RecvMessage()
+	std::string recvMessage()
 	{
 		if (this->sockfd < 0) {
 			std::unique_lock<std::mutex> lk(this->socket_lock);
@@ -86,43 +86,78 @@ public:
 		}
 
 		if (bytes_read < 0) {
-			/* TODO: handle error better? */
+			// TODO: handle error better?
 			perror("client socket recv error");
 		}
 
-		/* only get here on recv error or close */
-		Close();
+		// only get here on recv error or close
+		closeClient();
 		return "";
 	}
 
-	~Client() { Close(); }
+	// TODO: handle error better
+	void sendMessage(const std::string &msg)
+	{
+		if (this->sockfd < 0) {
+			std::unique_lock<std::mutex> lk(this->socket_lock);
+			while (this->sockfd < 0) {
+				this->socket_ready.wait(lk);
+			}
+			lk.unlock();
+		}
+
+		ssize_t bytes_sent;
+		bytes_sent = send(this->sockfd, msg.c_str(), msg.length() + 1, 0);
+		if (bytes_sent == -1) {
+			// TODO: handle better
+			perror("error send");
+			return;
+		}
+	}
+
+	~Client() { closeClient(); }
 
 private:
 	std::stringstream recv_stream;
 };
 
+enum MoveType {
+	WAIT,    // tell the player class to wait for directive
+	OWN,     // let player class make move
+	DIRECTED // use move from caller
+};
+
 class Player {
 public:
-	virtual void loop() = 0;
-
 	[[maybe_unused]] static constexpr bool force_create = true;
+	std::string name = "";
+	std::atomic<MoveType> move_type{WAIT};
 
-	/* constructor */
-	Player(const std::string &);
+	// constructor
+	Player(const std::string &, const std::string &);
 
-	/* destructor */
-	~Player();
+	// destructor
+	virtual ~Player();
 
+	virtual void loop() = 0;
 	void connect(bool force = false);
+	void notifyMove(MoveType, const std::string &);
+	void notifyOwnMove();
 
 protected:
-	std::string name = "";
+	std::string className;
 	std::string socket_name = "";
 	int server_sockfd = -1;
 	std::mt19937 rng;
 	Client client;
 	std::vector<std::thread> threads;
 
+	std::string move;
+	std::mutex move_lock;
+	std::condition_variable move_cv;
+
+	std::string waitDirectedMove();
+	virtual std::string decideOwnMove() { return ""; };
 	int createSocket(bool force = false);
 	bool connectHelper();
 	void closeSocketServer();

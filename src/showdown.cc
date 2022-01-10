@@ -38,7 +38,7 @@ Showdown::~Showdown()
 {
 	/* TODO: more error handling? */
 	int stat_loc;
-	if (waitpid(this->child.pid, &stat_loc, 0) != this->child.pid) {
+	if (this->child.pid != 0 && waitpid(this->child.pid, &stat_loc, 0) != this->child.pid) {
 		std::perror("Wait failed for child process");
 	}
 }

@@ -19,6 +19,8 @@
 #ifndef RANDOM_PLAYER_HH
 #define RANDOM_PLAYER_HH
 
+#include <nlohmann/json.hpp>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -27,16 +29,21 @@
 namespace showdown {
 class RandomPlayer : public Player {
 public:
-	/* inherit constructors */
-	using Player::Player;
+	// constructor
+	RandomPlayer(const std::string &name) : Player(name, "RandomPlayer"){};
 
-	void loop();
-
+	// destructor
 	~RandomPlayer();
 
+	void loop() override;
+
 private:
-	size_t randomInt(size_t, size_t);
+	std::string className;
 	std::vector<std::thread> threads;
+	nlohmann::json last_request = nullptr;
+
+	size_t randomInt(size_t, size_t);
+	std::string decideOwnMove() override;
 };
 } // namespace showdown
 

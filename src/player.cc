@@ -39,15 +39,18 @@ namespace showdown {
  *
  * player name must be alphanumeric and up to MAX_NAME_LENGTH characters
  */
-Player::Player(const std::string &name)
+Player::Player(const std::string &name, const std::string &className)
 {
+	this->className = className;
+
 	if (name.length() > MAX_NAME_LENGTH) {
-		throw std::invalid_argument("Player name has max length: " + std::to_string(MAX_NAME_LENGTH));
+		throw std::invalid_argument(this->className +
+		                            " name has max length: " + std::to_string(MAX_NAME_LENGTH));
 	}
 
 	for (auto &c: name) {
 		if (!std::isalnum(c)) {
-			throw std::invalid_argument("Player name must be alphanumeric");
+			throw std::invalid_argument(this->className + " name must be alphanumeric");
 		}
 	}
 
@@ -73,6 +76,8 @@ Player::~Player()
 	for (auto &t: this->threads) {
 		t.join();
 	}
+
+	this->threads.clear();
 }
 
 void
@@ -83,6 +88,54 @@ Player::connect(bool force)
 	}
 
 	this->threads.push_back(std::thread([this]() { this->connectHelper(); }));
+}
+
+/*
+ * let the controlling thread tell this class to decide its own move or use the given move
+ */
+void
+Player::notifyMove(MoveType move_type, const std::string &move)
+{
+	// TODO ensure move is valid if move_type is DIRECTED?
+	std::unique_lock<std::mutex> lk(this->move_lock);
+	this->move = move;
+	this->move_type = move_type;
+	lk.unlock();
+
+	this->move_cv.notify_one();
+}
+
+/*
+ * alias for letting this class make its own move
+ */
+void
+Player::notifyOwnMove()
+{
+	this->notifyMove(MoveType::OWN, "");
+}
+
+std::string
+Player::waitDirectedMove()
+{
+	if (this->move_type == WAIT) {
+		std::unique_lock<std::mutex> lk(this->move_lock);
+		while (this->move_type == WAIT) {
+			// std::cout << this->name << " waiting" << std::endl;
+			this->move_cv.wait(lk);
+		}
+		lk.unlock();
+	}
+
+	switch (this->move_type) {
+	case OWN:
+		this->move_type = WAIT;
+		return decideOwnMove();
+	case DIRECTED:
+		this->move_type = WAIT;
+		return this->move;
+	case WAIT: // shouldn't get here
+		throw std::runtime_error("Shouldn't reach case WAIT in waitDirectedMove");
+	}
 }
 
 bool
