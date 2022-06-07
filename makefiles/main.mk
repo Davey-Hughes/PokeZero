@@ -12,7 +12,7 @@ LD := $(CXX)
 # linker flags
 LDFLAGS :=
 # linker flags: libraries to link (e.g. -lfoo)
-LDLIBS :=
+LDLIBS := -lpthread
 # flags required for dependency generation; passed to compilers
 DEPFLAGS = -MQ $@ -MD -MP -MF $(DEPDIR)/$*.Td
 
