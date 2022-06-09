@@ -33,7 +33,7 @@ PRECOMPILE =
 # postcompile step
 POSTCOMPILE = mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
-.PHONY: all debug release showdown format run
+.PHONY: all valgrind debug release showdown format run
 
 all: format debug $(GIT_SUBMODULES) showdown
 
@@ -69,6 +69,11 @@ debug: $(TARGET)
 # release flags
 release: CXXFLAGS += -O3 -march=native
 release: $(TARGET)
+	ln -sf $(CXXTARGET) $(TARGET)
+
+# valgrind flags
+valgrind: CXXFLAGS += -O3 -march=native -mno-avx512f
+valgrind: $(TARGET)
 	ln -sf $(CXXTARGET) $(TARGET)
 
 $(TARGET): $(CXXTARGET)

@@ -10,7 +10,7 @@ export CXXTARGET := $(BINDIR)/$(TARGET)_debug
 
 # passes C++ building to another makefile to assist in separate release and
 # debug builds
-all debug release format $(TARGET):
+all valgrind debug release format $(TARGET):
 	$(MAKE) $@ --no-print-directory -j -f makefiles/main.mk
 
 run: showdown
@@ -37,6 +37,9 @@ showdown: $(GIT_SUBMODULES)
 # change the executale target and object build location on release build
 release: export OBJDIR := $(BUILD)/objects/release
 release: export CXXTARGET := $(BINDIR)/$(TARGET)_release
+
+valgrind: export OBJDIR := $(BUILD)/objects/valgrind
+valgrind: export CXXTARGET := $(BINDIR)/$(TARGET)_valgrind
 
 clean:
 	rm -rvf $(BUILD)
