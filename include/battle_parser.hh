@@ -20,6 +20,7 @@
 #define BATTLE_PARSER_HH
 
 #include <nlohmann/json.hpp>
+#include <shared_mutex>
 
 #include "debug_helper.hh"
 
@@ -100,13 +101,12 @@ public:
 	// specify whether to print debugging statements
 	BattleParser(bool debug) : BattleParser() { this->debug = debug; }
 
-	void setState(const std::string &);
-	void clearState();
 	ResponseType handleResponse(const std::string &);
-	int getStateId();
-	std::string getStateStr() { return this->state.dump(); }
+	void addState(nlohmann::json);
 
-	MLVec getMLVec();
+	std::string getStateStr(int);
+	int getStateId(int);
+	MLVec getMLVec(int);
 
 	std::string winner = ""; // winnner
 
@@ -114,21 +114,16 @@ private:
 	bool debug = false;   // print debug info
 	PokedexData dex_data; // struct with json info read from files
 
-	int turn = -1;        // turn number
-	int state_id = -1;    // state id generated from the node process
-	nlohmann::json state; // current state
+	std::shared_mutex turns_lock;
+	nlohmann::json turns = nlohmann::json::array({});
 
 	PokedexData readPokedexData();
 
-	/*
-	 * Normalizes a Pokemon's stat to be approximately in range [-1, 1],
-	 * assuming highest stat is 500
-	 */
+	// Normalizes a Pokemon's stat to be approximately in range [-1, 1],
+	// assuming highest stat is 500
 	double normStat(double stat) { return stat / 500 * 2 - 1; }
 
-	/*
-	 * Normalizes stat boosts to [-1, 1]
-	 */
+	// Normalizes stat boosts to [-1, 1]
 	double normBoost(double boost) { return (boost + 6) / 6 - 1; }
 
 	std::string stringifyBattleState(BattleState &);

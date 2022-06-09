@@ -23,7 +23,10 @@
 #include <iterator>
 #include <map>
 #include <nlohmann/json.hpp>
+#include <sstream>
 #include <stdexcept>
+
+#include "debug_helper.hh"
 
 namespace pokezero {
 BattleParser::BattleParser()
@@ -95,26 +98,6 @@ BattleParser::stringifyBattleState(BattleState &state)
 }
 
 /*
- * set the state of this BattleParser object from a json string
- *
- * TODO: error handling?
- */
-void
-BattleParser::setState(const std::string &state_str)
-{
-	this->state = nlohmann::json::parse(state_str);
-}
-
-/*
- * clear the current state of the BattleParser object
- */
-void
-BattleParser::clearState()
-{
-	this->state = nullptr;
-}
-
-/*
  * handle the response from the accompanying node process
  *
  * returns false if the battleState was null, true otherwise
@@ -125,15 +108,12 @@ BattleParser::handleResponse(const std::string &response)
 	auto res_json = nlohmann::json::parse(response);
 
 	if (res_json["type"] == nullptr) {
-		this->state = nullptr;
 		return BattleParser::EMPTY;
 	} else if (res_json["type"] == "end") {
 		return BattleParser::END;
 	}
 
-	this->turn = res_json["turn"];
-	this->state_id = res_json["id"];
-	this->state = res_json["battleState"];
+	addState(res_json);
 
 	if (res_json["winner"] != nullptr) {
 		this->winner = res_json["winner"];
@@ -142,24 +122,48 @@ BattleParser::handleResponse(const std::string &response)
 	return BATTLESTATE;
 }
 
-int
-BattleParser::getStateId()
+/*
+ * add a state to the states vector
+ *
+ * TODO: prevent extra adds
+ */
+void
+BattleParser::addState(nlohmann::json state)
 {
-	return this->state_id;
+	// acquire lock for writing
+	std::unique_lock lock(this->turns_lock);
+
+	this->turns.insert(this->turns.end(), state);
+}
+
+std::string
+BattleParser::getStateStr(int turn_num)
+{
+	// acquire lock for reading
+	std::shared_lock lock(this->turns_lock);
+
+	return this->turns.at(turn_num)["battleState"].dump();
+}
+int
+BattleParser::getStateId(int turn_num)
+{
+	// acquire lock for reading
+	std::shared_lock lock(this->turns_lock);
+
+	return this->turns.at(turn_num)["id"];
 }
 
 /*
  * Parses nlohmann::json string of battle state and returns array of extracted important
  * variables, as outlined in comments for BattleState struct.
- *
  */
 MLVec
-BattleParser::getMLVec()
+BattleParser::getMLVec(int turn_num)
 {
-	if (this->state == nullptr) {
-		throw std::runtime_error(
-			"Must set the current state of the BattleParser object with BattleParser.setState()");
-	}
+	// acquire lock for reading
+	std::shared_lock lock(this->turns_lock);
+
+	nlohmann::json state = this->turns.at(turn_num)["battleState"];
 
 	std::array<double, BattleStateSize> state_arr;
 	state_arr.fill(-1);
@@ -174,7 +178,7 @@ BattleParser::getMLVec()
 	for (size_t side_i = 0; side_i < 2; side_i++) {
 		// Iterate through map of Pokemon
 		std::map<std::string, nlohmann::json> poke_map;
-		for (nlohmann::json &mon: this->state["sides"][side_i]["pokemon"]) {
+		for (nlohmann::json &mon: state["sides"][side_i]["pokemon"]) {
 			std::string poke_id = mon["speciesState"]["id"];
 			poke_map.insert(std::make_pair(poke_id, mon));
 		}
@@ -260,8 +264,8 @@ BattleParser::getMLVec()
 		}
 
 		// Append side conditions
-		if (this->state["sides"][side_i]["sideConditions"].size() > 0) {
-			for (nlohmann::json &cond: this->state["sides"][side_i]["sideConditions"]) {
+		if (state["sides"][side_i]["sideConditions"].size() > 0) {
+			for (nlohmann::json &cond: state["sides"][side_i]["sideConditions"]) {
 				if (this->dex_data.side_conds.contains(cond["id"])) {
 					std::string cond_id = cond["id"];
 					if (cond_id == "stealthrock") {
@@ -301,8 +305,8 @@ BattleParser::getMLVec()
 		}
 
 		// Append slot conditions (future sight, wish)
-		if (this->state["sides"][side_i]["slotConditions"].size() > 0) {
-			for (nlohmann::json &cond: this->state["sides"][side_i]["slotConditions"]) {
+		if (state["sides"][side_i]["slotConditions"].size() > 0) {
+			for (nlohmann::json &cond: state["sides"][side_i]["slotConditions"]) {
 				if (this->dex_data.slot_conds.contains(cond["id"])) {
 					std::string cond_id = cond["id"];
 					if (cond_id == "wish") {
@@ -321,22 +325,22 @@ BattleParser::getMLVec()
 	}
 
 	// Append weather
-	if (this->state["field"]["weatherState"].size() > 1) {
-		std::string w_id = this->state["field"]["weatherState"]["id"];
+	if (state["field"]["weatherState"].size() > 1) {
+		std::string w_id = state["field"]["weatherState"]["id"];
 		pokestate->weather[this->dex_data.all_weather[w_id]] = 1;
-		pokestate->weather_ctr = double(this->state["field"]["weatherState"]["duration"]) / 7 * 2 - 1;
+		pokestate->weather_ctr = double(state["field"]["weatherState"]["duration"]) / 7 * 2 - 1;
 	}
 
 	// Append terrain
-	if (this->state["field"]["terrainState"].size() > 1) {
-		std::string t_id = this->state["field"]["terrainState"]["id"];
+	if (state["field"]["terrainState"].size() > 1) {
+		std::string t_id = state["field"]["terrainState"]["id"];
 		pokestate->terrain[this->dex_data.all_terrain[t_id]] = 1;
-		pokestate->terrain_ctr = double(this->state["field"]["terrainState"]["duration"]) / 7 * 2 - 1;
+		pokestate->terrain_ctr = double(state["field"]["terrainState"]["duration"]) / 7 * 2 - 1;
 	}
 
 	// Append trick room
-	if (this->state["field"]["pseudoWeather"].size() > 0) {
-		for (nlohmann::json pweather: this->state["field"]["pseudoWeather"]) {
+	if (state["field"]["pseudoWeather"].size() > 0) {
+		for (nlohmann::json pweather: state["field"]["pseudoWeather"]) {
 			if (pweather["id"] == "trickroom") {
 				pokestate->trick_room = 1;
 				pokestate->tr_ctr = pweather["duration"];

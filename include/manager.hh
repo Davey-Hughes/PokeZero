@@ -44,7 +44,7 @@ public:
 private:
 	std::string className;
 	showdown::Showdown sd;
-	BattleParser parser;
+	BattleParser parser = BattleParser();
 	std::array<showdown::Player *, 2> players;
 
 	void requestGetBattleState(int);
@@ -58,7 +58,6 @@ private:
 template <class P1, class P2>
 Manager<P1, P2>::Manager(const std::string &name) : Player(name, "Manager")
 {
-	this->parser = BattleParser();
 	this->players[0] = new P1("p1");
 	this->players[1] = new P2("p2");
 }
@@ -160,13 +159,12 @@ Manager<P1, P2>::loop()
 {
 	this->threads.push_back(std::thread([this]() {
 		int turn = 0;
-		// while (this->parser.winner.empty()) {
 		while (true) {
 			this->requestGetBattleState(turn);
 			std::string res = this->client.recvMessage();
 
-			// shouldn't get here in proper usage
 			if (res.empty()) {
+				// shouldn't get here in proper usage
 				throw std::runtime_error("Socket closed before receiving Battle END");
 			}
 
@@ -182,6 +180,7 @@ Manager<P1, P2>::loop()
 				// do nothing
 				break;
 			case BattleParser::BATTLESTATE:
+				this->parser.getMLVec(turn);
 				turn++;
 				break;
 			}
