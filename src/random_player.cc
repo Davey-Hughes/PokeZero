@@ -23,35 +23,6 @@
 #include <thread>
 
 namespace showdown {
-
-RandomPlayer::~RandomPlayer()
-{
-	for (auto &t: this->threads) {
-		t.join();
-	}
-
-	this->threads.clear();
-}
-
-void
-RandomPlayer::loop()
-{
-	this->threads.push_back(std::thread([this]() {
-		while (1) {
-			std::string message = this->socket.recvMessage();
-
-			if (message.empty()) {
-				return;
-			}
-
-			this->last_request = nlohmann::json::parse(message);
-
-			std::string reply_str = this->waitDirectedMove();
-			this->socket.sendMessage(reply_str);
-		}
-	}));
-}
-
 std::string
 RandomPlayer::decideOwnMove()
 {

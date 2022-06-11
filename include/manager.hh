@@ -40,9 +40,9 @@ public:
 	~Manager();
 
 	void start();
-	void loop();
+	virtual void loop();
 
-private:
+protected:
 	std::string name;
 
 	showdown::Showdown sd;

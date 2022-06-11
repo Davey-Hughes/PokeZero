@@ -16,28 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef RANDOM_PLAYER_HH
-#define RANDOM_PLAYER_HH
+#ifndef DIRECTED_PLAYER_HH
+#define DIRECTED_PLAYER_HH
 
 #include <nlohmann/json.hpp>
 #include <string>
-#include <thread>
-#include <vector>
 
 #include "player.hh"
 
 namespace showdown {
-class RandomPlayer : public Player {
+class DirectedPlayer : public Player {
 public:
 	// constructor
-	RandomPlayer(const std::string &name) : Player(name, "RandomPlayer"){};
+	DirectedPlayer(const std::string &name) : Player(name, "DirectedPlayer"){};
 
 private:
-	std::string className;
-
-	size_t randomInt(size_t, size_t);
-	std::string decideOwnMove() override;
+	std::string decideOwnMove() { return ""; };
 };
 } // namespace showdown
 
-#endif /* RANDOM_PLAYER_HH */
+#endif /* DIRECTED_PLAYER_HH */

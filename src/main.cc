@@ -22,7 +22,7 @@
 #include <nlohmann/json.hpp>
 
 #include "battle_parser.hh"
-#include "manager.hh"
+#include "mcts_manager.hh"
 #include "random_player.hh"
 
 int

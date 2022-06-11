@@ -15,29 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-#ifndef RANDOM_PLAYER_HH
-#define RANDOM_PLAYER_HH
-
-#include <nlohmann/json.hpp>
-#include <string>
-#include <thread>
-#include <vector>
-
-#include "player.hh"
+#include "directed_player.hh"
 
 namespace showdown {
-class RandomPlayer : public Player {
-public:
-	// constructor
-	RandomPlayer(const std::string &name) : Player(name, "RandomPlayer"){};
-
-private:
-	std::string className;
-
-	size_t randomInt(size_t, size_t);
-	std::string decideOwnMove() override;
-};
 } // namespace showdown
-
-#endif /* RANDOM_PLAYER_HH */

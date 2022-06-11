@@ -22,6 +22,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include <random>
 #include <string>
 
@@ -44,23 +45,24 @@ public:
 	Player(const std::string &, const std::string &);
 
 	// destructor
-	virtual ~Player(){};
+	virtual ~Player();
 
-	virtual void loop() = 0;
+	void loop();
 	void notifyMove(MoveType, const std::string &);
 	void notifyOwnMove();
 	void requestSetExit();
 
 protected:
 	std::string className;
-
 	Socket socket;
-
 	std::mt19937 rng;
+	nlohmann::json last_request = nullptr;
 
 	std::string move;
 	std::mutex move_lock;
 	std::condition_variable move_cv;
+
+	std::vector<std::thread> threads;
 
 	std::string waitDirectedMove();
 	virtual std::string decideOwnMove() { return ""; };
