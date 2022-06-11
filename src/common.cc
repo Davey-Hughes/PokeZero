@@ -18,7 +18,13 @@
 
 #include "common.hh"
 
+#include <unistd.h>
+
+#include <algorithm>
+#include <functional>
+#include <random>
 #include <stdexcept>
+#include <string>
 
 /*
  * player name must be alphanumeric and up to MAX_NAME_LENGTH characters
@@ -35,4 +41,27 @@ validateName(const std::string &name)
 			throw std::invalid_argument(name + " name must be alphanumeric");
 		}
 	}
+}
+
+/*
+ * from https://stackoverflow.com/a/12468109
+ */
+std::string
+randomString(std::mt19937 &rng, socklen_t length)
+{
+	static std::string charset =
+		"0123456789"
+		"abcdefghijklmnopqrstuvwxyz"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	thread_local std::uniform_int_distribution<std::string::size_type> pick(0, charset.size() - 2);
+
+	std::string s;
+	s.reserve(length);
+
+	while (length--) {
+		s += charset[pick(rng)];
+	}
+
+	return s;
 }

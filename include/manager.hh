@@ -49,6 +49,9 @@ protected:
 	BattleParser parser = BattleParser();
 	std::array<showdown::Player *, 2> players;
 
+	std::mt19937 rng;
+	std::uniform_int_distribution<> dist;
+
 	std::vector<std::thread> threads;
 
 	showdown::Socket socket;
@@ -65,8 +68,8 @@ template <class P1, class P2>
 Manager<P1, P2>::Manager(const std::string &name)
 {
 	validateName(name);
-	this->name = name;
-	this->socket.socket_name = "/tmp/" + name;
+	this->name = name + randomString(this->rng);
+	this->socket.socket_name = "/tmp/" + this->name;
 
 	this->players[0] = new P1("p1");
 	this->players[1] = new P2("p2");

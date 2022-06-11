@@ -56,6 +56,7 @@ protected:
 	std::string className;
 	Socket socket;
 	std::mt19937 rng;
+	std::uniform_int_distribution<> dist;
 	nlohmann::json last_request = nullptr;
 
 	std::string move;

@@ -19,10 +19,18 @@
 #ifndef COMMON_HH
 #define COMMON_HH
 
+#include <sys/socket.h>
+#include <sys/un.h>
+
+#include <random>
 #include <string>
 
-#define MAX_NAME_LENGTH 0xff
+[[maybe_unused]] static sockaddr_un s;
 
-void validateName(const std::string &name);
+#define SOCKET_RAND_LEN 0xf
+#define MAX_NAME_LENGTH sizeof(s.sun_path) - SOCKET_RAND_LEN - 1
+
+void validateName(const std::string &);
+std::string randomString(std::mt19937 &, socklen_t = SOCKET_RAND_LEN);
 
 #endif /* COMMON_HH */

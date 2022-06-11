@@ -40,15 +40,12 @@ Player::Player(const std::string &name, const std::string &className)
 	this->className = className;
 
 	validateName(name);
-	this->name = name;
-	this->socket.socket_name = "/tmp/" + name;
 
-	uint32_t seed = 0;
-	char *buffer = reinterpret_cast<char *>(&seed);
-	std::ifstream urandom_stream("/dev/urandom", std::ios_base::binary | std::ios_base::in);
-	urandom_stream.read(buffer, sizeof(seed));
+	// seed with a real random value
+	this->rng = std::mt19937(std::random_device{}());
 
-	std::mt19937 rand(seed);
+	this->name = name + '_' + randomString(this->rng);
+	this->socket.socket_name = "/tmp/" + this->name;
 
 	this->socket.connect(true);
 }
