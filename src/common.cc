@@ -16,29 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "main.hh"
+#include "common.hh"
 
-#include <fstream>
-#include <nlohmann/json.hpp>
+#include <stdexcept>
 
-#include "battle_parser.hh"
-#include "manager.hh"
-#include "random_player.hh"
-
-int
-main()
+/*
+ * player name must be alphanumeric and up to MAX_NAME_LENGTH characters
+ */
+void
+validateName(const std::string &name)
 {
-	/*
-	 * auto battle_parser = pokezero::BattleParser();
-	 *
-	 * nlohmann::json state;
-	 * std::ifstream ifstate("pokemon-showdown/battle_test_jsons/test.json");
-	 * ifstate >> state;
-	 *
-	 * battle_parser.setState(state.dump());
-	 * battle_parser.getMLVec();
-	 */
+	if (name.length() > MAX_NAME_LENGTH) {
+		throw std::invalid_argument(name + " name has max length: " + std::to_string(MAX_NAME_LENGTH));
+	}
 
-	auto manager = pokezero::Manager<showdown::RandomPlayer, showdown::RandomPlayer>("manager");
-	manager.start();
+	for (auto &c: name) {
+		if (!std::isalnum(c)) {
+			throw std::invalid_argument(name + " name must be alphanumeric");
+		}
+	}
 }

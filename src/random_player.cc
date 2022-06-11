@@ -18,9 +18,9 @@
 
 #include "random_player.hh"
 
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <thread>
-#include <vector>
 
 namespace showdown {
 
@@ -29,6 +29,8 @@ RandomPlayer::~RandomPlayer()
 	for (auto &t: this->threads) {
 		t.join();
 	}
+
+	this->threads.clear();
 }
 
 void
@@ -36,39 +38,40 @@ RandomPlayer::loop()
 {
 	this->threads.push_back(std::thread([this]() {
 		while (1) {
-			ssize_t bytes_sent;
-
-			std::string message = client.RecvMessage();
+			std::string message = this->socket.recvMessage();
 
 			if (message.empty()) {
 				return;
 			}
 
-			nlohmann::json msg_json = nlohmann::json::parse(message);
-			std::string command = msg_json["command"];
-			nlohmann::json reply;
+			this->last_request = nlohmann::json::parse(message);
 
-			if (command == "active") {
-				reply["active"] = this->randomInt(0, msg_json["choices"].size() - 1);
-			} else if (command == "forceSwitch") {
-				reply["switch"] = this->randomInt(0, msg_json["choices"].size() - 1);
-			} else if (command == "teamPreview") {
-				reply["teamPreview"] = "default";
-			} else {
-				std::cerr << "Unknown command: " << command << std::endl;
-			}
-
-			std::string reply_str = reply.dump();
-			bytes_sent = send(this->client.sockfd, reply_str.c_str(), reply_str.length() + 1, 0);
-			if (bytes_sent == -1) {
-				/* TODO: handle better */
-				perror("error send");
-				return;
-			}
+			std::string reply_str = this->waitDirectedMove();
+			this->socket.sendMessage(reply_str);
 		}
 	}));
 }
 
+std::string
+RandomPlayer::decideOwnMove()
+{
+	std::string command = this->last_request["command"];
+	nlohmann::json reply;
+	reply["type"] = "move";
+
+	if (command == "active") {
+		reply["active"] = this->randomInt(0, this->last_request["choices"].size() - 1);
+	} else if (command == "forceSwitch") {
+		reply["switch"] = this->randomInt(0, this->last_request["choices"].size() - 1);
+	} else if (command == "teamPreview") {
+		reply["teamPreview"] = "default";
+	} else {
+		std::cerr << "Unknown command: " << command << std::endl;
+	}
+
+	// std::cerr << this->last_request.dump() << '\n' << reply.dump() << "\n\n";
+	return reply.dump();
+}
 size_t
 RandomPlayer::randomInt(size_t start, size_t end)
 {
@@ -76,4 +79,5 @@ RandomPlayer::randomInt(size_t start, size_t end)
 	auto random_roll = std::bind(roll, std::ref(this->rng));
 	return random_roll();
 }
+
 } // namespace showdown

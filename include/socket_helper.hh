@@ -16,35 +16,54 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef RANDOM_PLAYER_HH
-#define RANDOM_PLAYER_HH
+#ifndef SOCKETHELPER_HH
+#define SOCKETHELPER_HH
 
-#include <nlohmann/json.hpp>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
 
-#include "player.hh"
+#define RECV_BUFSIZE 4096
 
 namespace showdown {
-class RandomPlayer : public Player {
+struct Socket {
 public:
-	// constructor
-	RandomPlayer(const std::string &name) : Player(name, "RandomPlayer"){};
+	std::atomic_int sockfd = -1;
+	std::mutex socket_lock;
+	std::condition_variable socket_ready;
+	std::string socket_name = "";
 
-	// destructor
-	~RandomPlayer();
+	int server_sockfd = -1;
 
-	void loop() override;
+	int createSocket(const std::string &, bool force = false);
+	void closeServer();
+
+	void connect(bool force = false);
+	bool connectHelper();
+	std::string recvMessage();
+	void sendMessage(const std::string &msg);
+	void closeClient();
+
+	~Socket();
 
 private:
-	std::string className;
+	std::stringstream recv_stream;
 	std::vector<std::thread> threads;
-	nlohmann::json last_request = nullptr;
-
-	size_t randomInt(size_t, size_t);
-	std::string decideOwnMove() override;
 };
+
+struct SocketClientHandler {
+public:
+
+private:
+};
+
 } // namespace showdown
 
-#endif /* RANDOM_PLAYER_HH */
+#endif /* SOCKETHELPER_HH */

@@ -16,29 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "main.hh"
+#ifndef COMMON_HH
+#define COMMON_HH
 
-#include <fstream>
-#include <nlohmann/json.hpp>
+#include <string>
 
-#include "battle_parser.hh"
-#include "manager.hh"
-#include "random_player.hh"
+#define MAX_NAME_LENGTH 0xff
 
-int
-main()
-{
-	/*
-	 * auto battle_parser = pokezero::BattleParser();
-	 *
-	 * nlohmann::json state;
-	 * std::ifstream ifstate("pokemon-showdown/battle_test_jsons/test.json");
-	 * ifstate >> state;
-	 *
-	 * battle_parser.setState(state.dump());
-	 * battle_parser.getMLVec();
-	 */
+void validateName(const std::string &name);
 
-	auto manager = pokezero::Manager<showdown::RandomPlayer, showdown::RandomPlayer>("manager");
-	manager.start();
-}
+#endif /* COMMON_HH */
