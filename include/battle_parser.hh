@@ -20,7 +20,6 @@
 #define BATTLE_PARSER_HH
 
 #include <nlohmann/json.hpp>
-#include <shared_mutex>
 
 #include "debug_helper.hh"
 
@@ -114,7 +113,6 @@ private:
 	bool debug = false;   // print debug info
 	PokedexData dex_data; // struct with json info read from files
 
-	std::shared_mutex turns_lock;
 	nlohmann::json turns = nlohmann::json::array({});
 
 	PokedexData readPokedexData();

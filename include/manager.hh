@@ -19,18 +19,19 @@
 #ifndef MANAGER_HH
 #define MANAGER_HH
 
-#include <chrono>
 #include <nlohmann/json.hpp>
 #include <thread>
 
 #include "battle_parser.hh"
+#include "common.hh"
 #include "player.hh"
 #include "random_player.hh"
 #include "showdown.hh"
+#include "socket_helper.hh"
 
 namespace pokezero {
 template <class P1 = showdown::RandomPlayer, class P2 = showdown::RandomPlayer>
-class Manager : public showdown::Player {
+class Manager {
 public:
 	// constructors
 	Manager(const std::string &);
@@ -42,10 +43,15 @@ public:
 	void loop();
 
 private:
-	std::string className;
+	std::string name;
+
 	showdown::Showdown sd;
 	BattleParser parser = BattleParser();
 	std::array<showdown::Player *, 2> players;
+
+	std::vector<std::thread> threads;
+
+	showdown::Socket socket;
 
 	void requestGetBattleState(int);
 	void requestSetBattleState(int);
@@ -56,8 +62,12 @@ private:
  * constructor
  */
 template <class P1, class P2>
-Manager<P1, P2>::Manager(const std::string &name) : Player(name, "Manager")
+Manager<P1, P2>::Manager(const std::string &name)
 {
+	validateName(name);
+	this->name = name;
+	this->socket.socket_name = "/tmp/" + name;
+
 	this->players[0] = new P1("p1");
 	this->players[1] = new P2("p2");
 }
@@ -87,19 +97,18 @@ void
 Manager<P1, P2>::start()
 {
 	// TODO: don't force unlink of socket file?
-	this->connect(true);
+	this->socket.connect(true);
 
 	this->sd = showdown::Showdown();
 
-	// for (auto &p: this->players) {
-	// p->connect(showdown::RandomPlayer::force_create);
-	// p->loop();
-	// }
+	for (auto &p: this->players) {
+		p->loop();
+	}
 
 	// TODO: encode path better
-	this->sd.start("./pokemon-showdown/.sim-dist/examples/battle-managing.js", this->name);
-	// this->sd.start("./pokemon-showdown/.sim-dist/examples/battle-managing.js", this->name,
-	// this->players[0]->name, this->players[1]->name);
+	// this->sd.start("./pokemon-showdown/.sim-dist/examples/battle-managing.js", this->name);
+	this->sd.start("./pokemon-showdown/.sim-dist/examples/battle-managing.js", this->name, this->players[0]->name,
+	               this->players[1]->name);
 
 	this->loop();
 }
@@ -118,7 +127,7 @@ Manager<P1, P2>::requestGetBattleState(int turn)
 	send_msg["item"] = "battleState";
 	send_msg["turn"] = turn;
 
-	this->client.sendMessage(send_msg.dump());
+	this->socket.sendMessage(send_msg.dump());
 }
 
 /*
@@ -137,7 +146,7 @@ Manager<P1, P2>::requestSetBattleState(int turn)
 	send_msg["item"] = "battleState";
 	send_msg["turn"] = turn;
 
-	this->client.sendMessage(send_msg.dump());
+	this->socket.sendMessage(send_msg.dump());
 }
 
 template <class P1, class P2>
@@ -149,8 +158,8 @@ Manager<P1, P2>::requestSetExit()
 	send_msg["method"] = "set";
 	send_msg["item"] = "exit";
 
-	this->client.sendMessage(send_msg.dump());
-	this->client.closeClient();
+	this->socket.sendMessage(send_msg.dump());
+	this->socket.closeClient();
 }
 
 template <class P1, class P2>
@@ -161,7 +170,7 @@ Manager<P1, P2>::loop()
 		int turn = 0;
 		while (true) {
 			this->requestGetBattleState(turn);
-			std::string res = this->client.recvMessage();
+			std::string res = this->socket.recvMessage();
 
 			if (res.empty()) {
 				// shouldn't get here in proper usage
@@ -180,12 +189,10 @@ Manager<P1, P2>::loop()
 				// do nothing
 				break;
 			case BattleParser::BATTLESTATE:
-				this->parser.getMLVec(turn);
+				// this->parser.getMLVec(turn);
 				turn++;
 				break;
 			}
-
-			// std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		};
 	}));
 }

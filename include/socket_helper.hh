@@ -16,55 +16,54 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef PLAYER_HH
-#define PLAYER_HH
+#ifndef SOCKETHELPER_HH
+#define SOCKETHELPER_HH
+
+#include <sys/socket.h>
+#include <unistd.h>
 
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
-#include <random>
+#include <sstream>
 #include <string>
+#include <thread>
+#include <vector>
 
-#include "socket_helper.hh"
+#define RECV_BUFSIZE 4096
 
 namespace showdown {
-enum MoveType {
-	WAIT,    // tell the player class to wait for directive
-	OWN,     // let player class make move
-	DIRECTED // use move from caller
-};
-
-class Player {
+struct Socket {
 public:
-	[[maybe_unused]] static constexpr bool force_create = true;
-	std::string name = "";
-	std::atomic<MoveType> move_type{WAIT};
+	std::atomic_int sockfd = -1;
+	std::mutex socket_lock;
+	std::condition_variable socket_ready;
+	std::string socket_name = "";
 
-	// constructor
-	Player(const std::string &, const std::string &);
+	int server_sockfd = -1;
 
-	// destructor
-	virtual ~Player(){};
+	int createSocket(const std::string &, bool force = false);
+	void closeServer();
 
-	virtual void loop() = 0;
-	void notifyMove(MoveType, const std::string &);
-	void notifyOwnMove();
-	void requestSetExit();
+	void connect(bool force = false);
+	bool connectHelper();
+	std::string recvMessage();
+	void sendMessage(const std::string &msg);
+	void closeClient();
 
-protected:
-	std::string className;
+	~Socket();
 
-	Socket socket;
-
-	std::mt19937 rng;
-
-	std::string move;
-	std::mutex move_lock;
-	std::condition_variable move_cv;
-
-	std::string waitDirectedMove();
-	virtual std::string decideOwnMove() { return ""; };
+private:
+	std::stringstream recv_stream;
+	std::vector<std::thread> threads;
 };
+
+struct SocketClientHandler {
+public:
+
+private:
+};
+
 } // namespace showdown
 
-#endif /* PLAYER_HH */
+#endif /* SOCKETHELPER_HH */

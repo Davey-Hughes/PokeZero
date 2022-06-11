@@ -18,9 +18,9 @@
 
 #include "random_player.hh"
 
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <thread>
-#include <vector>
 
 namespace showdown {
 
@@ -38,7 +38,7 @@ RandomPlayer::loop()
 {
 	this->threads.push_back(std::thread([this]() {
 		while (1) {
-			std::string message = client.recvMessage();
+			std::string message = this->socket.recvMessage();
 
 			if (message.empty()) {
 				return;
@@ -47,7 +47,7 @@ RandomPlayer::loop()
 			this->last_request = nlohmann::json::parse(message);
 
 			std::string reply_str = this->waitDirectedMove();
-			this->client.sendMessage(reply_str);
+			this->socket.sendMessage(reply_str);
 		}
 	}));
 }
@@ -79,4 +79,5 @@ RandomPlayer::randomInt(size_t start, size_t end)
 	auto random_roll = std::bind(roll, std::ref(this->rng));
 	return random_roll();
 }
+
 } // namespace showdown

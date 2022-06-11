@@ -130,26 +130,17 @@ BattleParser::handleResponse(const std::string &response)
 void
 BattleParser::addState(nlohmann::json state)
 {
-	// acquire lock for writing
-	std::unique_lock lock(this->turns_lock);
-
 	this->turns.insert(this->turns.end(), state);
 }
 
 std::string
 BattleParser::getStateStr(int turn_num)
 {
-	// acquire lock for reading
-	std::shared_lock lock(this->turns_lock);
-
 	return this->turns.at(turn_num)["battleState"].dump();
 }
 int
 BattleParser::getStateId(int turn_num)
 {
-	// acquire lock for reading
-	std::shared_lock lock(this->turns_lock);
-
 	return this->turns.at(turn_num)["id"];
 }
 
@@ -160,9 +151,6 @@ BattleParser::getStateId(int turn_num)
 MLVec
 BattleParser::getMLVec(int turn_num)
 {
-	// acquire lock for reading
-	std::shared_lock lock(this->turns_lock);
-
 	nlohmann::json state = this->turns.at(turn_num)["battleState"];
 
 	std::array<double, BattleStateSize> state_arr;
