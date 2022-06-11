@@ -189,7 +189,7 @@ Manager<P1, P2>::loop()
 				// do nothing
 				break;
 			case BattleParser::BATTLESTATE:
-				// this->parser.getMLVec(turn);
+				this->parser.getMLVec(turn);
 				turn++;
 				break;
 			}

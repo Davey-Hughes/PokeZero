@@ -251,6 +251,7 @@ BattleParser::getMLVec(int turn_num)
 			poke_idx++;
 		}
 
+		// clang-format off
 		// Append side conditions
 		if (state["sides"][side_i]["sideConditions"].size() > 0) {
 			for (nlohmann::json &cond: state["sides"][side_i]["sideConditions"]) {
@@ -261,36 +262,22 @@ BattleParser::getMLVec(int turn_num)
 					} else if (cond_id == "stickyweb") {
 						pokestate->sides[side_i].stickyweb = 1;
 					} else if (cond_id == "spikes") {
-						pokestate->sides[side_i].spikes_ctr =
-							double(this->dex_data.side_conds["spikes"]["layers"]) / 3 * 2 -
-							1;
+						pokestate->sides[side_i].spikes_ctr = double(this->dex_data.side_conds["spikes"]["layers"]) / 3 * 2 - 1;
 					} else if (cond_id == "toxicspikes") {
-						pokestate->sides[side_i].tspikes_ctr =
-							double(this->dex_data.side_conds["toxicspikes"]["layers"]) - 1;
+						pokestate->sides[side_i].tspikes_ctr = double(this->dex_data.side_conds["toxicspikes"]["layers"]) - 1;
 					} else if (cond_id == "reflect") {
-						pokestate->sides[side_i].ref_ctr =
-							double(this->dex_data.side_conds["reflect"]["duration"]) / 7 *
-								2 -
-							1;
+						pokestate->sides[side_i].ref_ctr = double(this->dex_data.side_conds["reflect"]["duration"]) / 7 * 2 - 1;
 					} else if (cond_id == "lightscreen") {
-						pokestate->sides[side_i].ls_ctr =
-							double(this->dex_data.side_conds["lightscreen"]["duration"]) /
-								7 * 2 -
-							1;
+						pokestate->sides[side_i].ls_ctr = double(this->dex_data.side_conds["lightscreen"]["duration"]) / 7 * 2 - 1;
 					} else if (cond_id == "auroraveil") {
-						pokestate->sides[side_i].av_ctr =
-							double(this->dex_data.side_conds["auroraveil"]["duration"]) /
-								7 * 2 -
-							1;
+						pokestate->sides[side_i].av_ctr = double(this->dex_data.side_conds["auroraveil"]["duration"]) / 7 * 2 - 1;
 					} else if (cond_id == "tailwind") {
-						pokestate->sides[side_i].tw_ctr =
-							double(this->dex_data.side_conds["tailwind"]["duration"]) / 7 *
-								2 -
-							1;
+						pokestate->sides[side_i].tw_ctr = double(this->dex_data.side_conds["tailwind"]["duration"]) / 7 * 2 - 1;
 					}
 				}
 			}
 		}
+		// clang-format on
 
 		// Append slot conditions (future sight, wish)
 		if (state["sides"][side_i]["slotConditions"].size() > 0) {
