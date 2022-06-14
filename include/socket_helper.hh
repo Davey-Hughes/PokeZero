@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SOCKETHELPER_HH
-#define SOCKETHELPER_HH
+#ifndef SOCKET_HELPER_HH
+#define SOCKET_HELPER_HH
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -66,4 +66,4 @@ private:
 
 } // namespace showdown
 
-#endif /* SOCKETHELPER_HH */
+#endif /* SOCKET_HELPER_HH */
