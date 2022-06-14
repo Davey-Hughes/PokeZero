@@ -2,6 +2,8 @@
 PokeZero is a Monte Carlo Tree Search (MCTS) ML approach to playing Pokemon
 games using the Pokemon Showdown simulator.
 
+![Build](https://github.com/Davey-Hughes/PokeZero/actions/workflows/build-ci.yml/badge.svg)
+
 ## Dependencies
 * [nlohmann/json](https://github.com/nlohmann/json):  
     * The current makefile uses `pkg-config` to find the location of this

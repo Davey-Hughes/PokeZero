@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  linux:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: install dependencies
+      run: sudo apt install nlohmann-json3-dev clang-12
+
+    - name: make debug
+      run: make debug
+
+    - name: make release
+      run: make release
+
+  macos:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: install dependencies
+      run: brew install nlohmann-json
+
+    - name: make debug
+      run: make CXX=/usr/local/opt/llvm/bin/clang++ debug
+
+    - name: make release
+      run: make CXX=/usr/local/opt/llvm/bin/clang++ release

@@ -19,6 +19,7 @@
 #include "battle_parser.hh"
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <map>
